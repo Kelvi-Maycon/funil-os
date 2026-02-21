@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { Node } from '@/types'
+import { Node, Task } from '@/types'
 import { cn } from '@/lib/utils'
+import useTaskStore from '@/stores/useTaskStore'
+import useFunnelStore from '@/stores/useFunnelStore'
 import {
   Megaphone,
   LayoutTemplate,
@@ -19,6 +21,8 @@ import {
   ExternalLink,
   Image as ImageIcon,
   CheckSquare,
+  Plus,
+  X,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -87,16 +91,60 @@ export default function NodeItem({
   const [isDragging, setIsDragging] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
 
+  const [tasks, setTasks] = useTaskStore()
+  const [funnels] = useFunnelStore()
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [isAddingTask, setIsAddingTask] = useState(false)
+
+  const funnel = funnels.find((f) => f.nodes.some((n) => n.id === node.id))
+  const linkedTasks = tasks.filter(
+    (t) => t.nodeId === node.id || node.data.linkedTaskIds?.includes(t.id),
+  )
+
+  const handleToggleTask = (task: Task) => {
+    const newStatus = task.status === 'Concluído' ? 'A Fazer' : 'Concluído'
+    setTasks(
+      tasks.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t)),
+    )
+  }
+
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(tasks.filter((t) => t.id !== taskId))
+  }
+
+  const handleAddTask = () => {
+    if (!newTaskTitle.trim()) {
+      setIsAddingTask(false)
+      return
+    }
+
+    const newTask: Task = {
+      id: `t_${Date.now()}`,
+      title: newTaskTitle.trim(),
+      projectId: funnel?.projectId || null,
+      funnelId: funnel?.id,
+      nodeId: node.id,
+      priority: 'Média',
+      status: 'A Fazer',
+      deadline: new Date(Date.now() + 86400000).toISOString(),
+    }
+
+    setTasks([...tasks, newTask])
+    setNewTaskTitle('')
+    setIsAddingTask(false)
+  }
+
   const handlePointerDown = (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement
     if (
       isPanMode ||
-      (e.target as HTMLElement).closest('button') ||
-      (e.target as HTMLElement).closest('.interactive-icon') ||
-      (e.target as HTMLElement).closest('[role="checkbox"]')
+      target.closest('button') ||
+      target.closest('.interactive-icon') ||
+      target.closest('[role="checkbox"]') ||
+      target.closest('input')
     )
       return
     e.stopPropagation()
-    const target = e.currentTarget as HTMLElement
     target.setPointerCapture(e.pointerId)
     setIsDragging(true)
     onSelect()
@@ -425,6 +473,86 @@ export default function NodeItem({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Embedded Task List */}
+      <div className="mt-2 flex flex-col gap-1.5">
+        {linkedTasks.length > 0 && (
+          <div className="h-px bg-slate-100 w-full my-1 rounded-full" />
+        )}
+
+        {linkedTasks.map((task) => (
+          <div
+            key={task.id}
+            className="flex items-start gap-2 group/task relative pr-4"
+          >
+            <Checkbox
+              checked={task.status === 'Concluído'}
+              onCheckedChange={() => handleToggleTask(task)}
+              className="mt-0.5 w-3.5 h-3.5 rounded-[4px] border-slate-300 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+            />
+            <span
+              className={cn(
+                'text-[12px] leading-tight font-medium flex-1 transition-all break-words',
+                task.status === 'Concluído'
+                  ? 'text-slate-400 line-through'
+                  : 'text-slate-600 group-hover/task:text-slate-800',
+              )}
+            >
+              {task.title}
+            </span>
+            <button
+              className="absolute right-0 top-0 opacity-0 group-hover/task:opacity-100 text-slate-300 hover:text-red-500 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeleteTask(task.id)
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+
+        {isAddingTask ? (
+          <div className="flex items-center gap-1.5 mt-1">
+            <input
+              autoFocus
+              type="text"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleAddTask()
+                }
+                if (e.key === 'Escape') {
+                  setIsAddingTask(false)
+                  setNewTaskTitle('')
+                }
+              }}
+              onBlur={() => {
+                if (newTaskTitle.trim()) {
+                  handleAddTask()
+                } else {
+                  setIsAddingTask(false)
+                }
+              }}
+              placeholder="Nome da tarefa..."
+              className="flex-1 text-[12px] bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/20 transition-all text-slate-700 w-full"
+            />
+          </div>
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsAddingTask(true)
+            }}
+            className="flex items-center gap-1.5 mt-1 text-[12px] font-medium text-slate-400 hover:text-blue-500 transition-colors w-full text-left py-0.5 rounded-sm interactive-icon"
+          >
+            <Plus size={12} strokeWidth={2.5} />
+            Adicionar tarefa
+          </button>
+        )}
       </div>
 
       {!isPanMode && (

@@ -49,8 +49,8 @@ export default function RightPanel({
   const linkedDocs = docs.filter((d) =>
     node.data.linkedDocumentIds?.includes(d.id),
   )
-  const linkedTasks = tasks.filter((t) =>
-    node.data.linkedTaskIds?.includes(t.id),
+  const linkedTasks = tasks.filter(
+    (t) => t.nodeId === node.id || node.data.linkedTaskIds?.includes(t.id),
   )
   const linkedAssets = assets.filter((a) =>
     node.data.linkedAssetIds?.includes(a.id),
@@ -64,6 +64,7 @@ export default function RightPanel({
   const projTasks = tasks.filter(
     (t) =>
       t.projectId === funnel.projectId &&
+      t.nodeId !== node.id &&
       !node.data.linkedTaskIds?.includes(t.id),
   )
   const projAssets = assets.filter(
