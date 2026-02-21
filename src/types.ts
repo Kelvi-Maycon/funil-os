@@ -31,6 +31,8 @@ export type Node = {
     stroke?: string
     strokeWidth?: number
     color?: string
+    opacity?: number
+    strokeDasharray?: string
   }
 }
 export type Edge = {

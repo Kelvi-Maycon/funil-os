@@ -95,7 +95,9 @@ export default function NodeItem({
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [isEditingText, setIsEditingText] = useState(false)
   const textRef = useRef<HTMLDivElement>(null)
+  const hasAutoSelected = useRef(false)
 
   const [tasks, setTasks] = useTaskStore()
   const [funnels] = useFunnelStore()
@@ -111,13 +113,21 @@ export default function NodeItem({
   const isSelectMode = activeTool === 'Select'
 
   useEffect(() => {
-    if (node.type === 'FloatingText' && node.data.name === 'New Text') {
-      if (textRef.current) {
-        textRef.current.focus()
-        document.execCommand('selectAll', false, null)
-      }
+    if (
+      node.type === 'FloatingText' &&
+      node.data.name === 'New Text' &&
+      !hasAutoSelected.current
+    ) {
+      hasAutoSelected.current = true
+      setIsEditingText(true)
+      setTimeout(() => {
+        if (textRef.current) {
+          textRef.current.focus()
+          document.execCommand('selectAll', false, undefined)
+        }
+      }, 0)
     }
-  }, [node.type])
+  }, [node.type, node.data.name])
 
   const handleToggleTask = (task: Task) => {
     const newStatus = task.status === 'Concluído' ? 'A Fazer' : 'Concluído'
@@ -333,27 +343,50 @@ export default function NodeItem({
             : isPanMode
               ? 'cursor-grab'
               : isSelectMode
-                ? 'cursor-pointer'
+                ? isEditingText
+                  ? 'cursor-text'
+                  : 'cursor-pointer'
                 : '',
         )}
         style={{
           transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
           color: node.style?.color || '#1e293b',
         }}
-        onPointerDown={handlePointerDown}
+        onPointerDown={(e) => {
+          if (isEditingText) {
+            e.stopPropagation()
+            return
+          }
+          handlePointerDown(e)
+        }}
+        onDoubleClick={(e) => {
+          if (!isPanMode && isSelectMode) {
+            e.stopPropagation()
+            setIsEditingText(true)
+            setTimeout(() => {
+              textRef.current?.focus()
+              const selection = window.getSelection()
+              const range = document.createRange()
+              range.selectNodeContents(textRef.current!)
+              selection?.removeAllRanges()
+              selection?.addRange(range)
+            }, 0)
+          }
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         data-node-id={node.id}
       >
         <div
           ref={textRef}
-          className="font-medium text-[15px] whitespace-pre-wrap outline-none cursor-text min-h-[24px] min-w-[20px]"
-          contentEditable={isSelectMode}
+          className="font-medium text-[15px] whitespace-pre-wrap outline-none min-h-[24px] min-w-[20px]"
+          contentEditable={isEditingText}
           suppressContentEditableWarning
           onPointerDown={(e) => {
-            if (!isPanMode) e.stopPropagation()
+            if (isEditingText) e.stopPropagation()
           }}
           onBlur={(e) => {
+            setIsEditingText(false)
             const val = e.currentTarget.textContent || 'Text'
             onTextChange(val)
           }}
@@ -440,8 +473,14 @@ export default function NodeItem({
               height={h}
               rx={8}
               fill={node.style?.fill || 'transparent'}
+              fillOpacity={node.style?.opacity ?? 1}
               stroke={node.style?.stroke || '#1e293b'}
-              strokeWidth={node.style?.strokeWidth || 2}
+              strokeWidth={node.style?.strokeWidth ?? 2}
+              strokeDasharray={
+                node.style?.strokeDasharray === 'none'
+                  ? undefined
+                  : node.style?.strokeDasharray
+              }
               className={cn(
                 'transition-all pointer-events-auto',
                 selected && 'stroke-purple-400 drop-shadow-md',
@@ -455,8 +494,14 @@ export default function NodeItem({
               rx={w / 2}
               ry={h / 2}
               fill={node.style?.fill || 'transparent'}
+              fillOpacity={node.style?.opacity ?? 1}
               stroke={node.style?.stroke || '#1e293b'}
-              strokeWidth={node.style?.strokeWidth || 2}
+              strokeWidth={node.style?.strokeWidth ?? 2}
+              strokeDasharray={
+                node.style?.strokeDasharray === 'none'
+                  ? undefined
+                  : node.style?.strokeDasharray
+              }
               className={cn(
                 'transition-all pointer-events-auto',
                 selected && 'stroke-purple-400 drop-shadow-md',
@@ -467,8 +512,14 @@ export default function NodeItem({
             <polygon
               points={`${w / 2},0 ${w},${h / 2} ${w / 2},${h} 0,${h / 2}`}
               fill={node.style?.fill || 'transparent'}
+              fillOpacity={node.style?.opacity ?? 1}
               stroke={node.style?.stroke || '#1e293b'}
-              strokeWidth={node.style?.strokeWidth || 2}
+              strokeWidth={node.style?.strokeWidth ?? 2}
+              strokeDasharray={
+                node.style?.strokeDasharray === 'none'
+                  ? undefined
+                  : node.style?.strokeDasharray
+              }
               strokeLinejoin="round"
               className={cn(
                 'transition-all pointer-events-auto',
@@ -567,26 +618,59 @@ export default function NodeItem({
             : isPanMode
               ? 'cursor-grab'
               : isSelectMode
-                ? 'cursor-pointer'
+                ? isEditingText
+                  ? 'cursor-text'
+                  : 'cursor-pointer'
                 : '',
         )}
         style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
-        onPointerDown={handlePointerDown}
+        onPointerDown={(e) => {
+          if (isEditingText) {
+            e.stopPropagation()
+            return
+          }
+          handlePointerDown(e)
+        }}
+        onDoubleClick={(e) => {
+          if (!isPanMode && isSelectMode) {
+            e.stopPropagation()
+            setIsEditingText(true)
+            setTimeout(() => {
+              textRef.current?.focus()
+            }, 0)
+          }
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         data-node-id={node.id}
       >
         <div
+          ref={textRef}
           className="font-medium text-[15px] whitespace-pre-wrap outline-none cursor-text"
-          contentEditable={isSelectMode}
+          contentEditable={isEditingText}
           suppressContentEditableWarning
           onPointerDown={(e) => {
-            if (!isPanMode) e.stopPropagation()
+            if (isEditingText) e.stopPropagation()
           }}
-          onBlur={(e) => onTextChange(e.currentTarget.textContent || 'Text')}
+          onBlur={(e) => {
+            setIsEditingText(false)
+            onTextChange(e.currentTarget.textContent || 'Text')
+          }}
         >
           {node.data.name}
         </div>
+
+        {!isPanMode && isSelectMode && (
+          <div
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon opacity-0 group-hover:opacity-100 transition-opacity"
+            onPointerDown={(e) => {
+              e.stopPropagation()
+              onEdgeDragStart(node.id, e)
+            }}
+          >
+            <div className="w-3 h-3 rounded-full bg-white border-2 border-slate-200 group-hover/port:border-purple-500 group-hover/port:scale-125 transition-all shadow-sm" />
+          </div>
+        )}
       </div>
     )
   }

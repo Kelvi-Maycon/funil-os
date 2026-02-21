@@ -39,7 +39,11 @@ const getRightPortCoords = (node: Node, x: number, y: number) => {
   const h = node.height || 120
   if (['Square', 'Diamond', 'Circle'].includes(node.type))
     return { x: x + w, y: y + h / 2 }
-  if (node.type === 'FloatingText') return { x: x + w, y: y + h / 2 }
+  if (node.type === 'FloatingText') {
+    const textLen = (node.data.name || '').length
+    const approxW = Math.max(40, textLen * 8.5 + 16)
+    return { x: x + approxW, y: y + 20 }
+  }
   if (node.type === 'Image') return { x: x + 300, y: y + 100 }
   if (node.type === 'Text') return { x: x + 150, y: y + 30 }
   return { x: x + 260, y: y + 44 }
@@ -49,7 +53,7 @@ const getLeftPortCoords = (node: Node, x: number, y: number) => {
   const h = node.height || 120
   if (['Square', 'Diamond', 'Circle'].includes(node.type))
     return { x, y: y + h / 2 }
-  if (node.type === 'FloatingText') return { x, y: y + h / 2 }
+  if (node.type === 'FloatingText') return { x, y: y + 20 }
   if (node.type === 'Image') return { x, y: y + 100 }
   if (node.type === 'Text') return { x, y: y + 30 }
   return { x, y: y + 44 }
@@ -88,7 +92,7 @@ export default function CanvasBoard({
     'Select' | 'Pan' | 'Square' | 'Diamond' | 'Circle'
   >('Select')
   const [showMinimap, setShowMinimap] = useState(false)
-  const [snapToGrid, setSnapToGrid] = useState(true)
+  const [snapToGrid, setSnapToGrid] = useState(false)
   const [draggedNode, setDraggedNode] = useState<{
     id: string
     x: number
@@ -318,7 +322,13 @@ export default function CanvasBoard({
               width,
               height,
               data: { name: '', status: '', subtitle: '' },
-              style: { fill: 'transparent', stroke: '#1e293b', strokeWidth: 2 },
+              style: {
+                fill: 'transparent',
+                opacity: 1,
+                stroke: '#1e293b',
+                strokeWidth: 2,
+                strokeDasharray: 'none',
+              },
             },
           ],
         })
@@ -767,7 +777,7 @@ export default function CanvasBoard({
       {(selectedNodeObj || selectedEdgeObj) && (
         <div
           className={cn(
-            'absolute top-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-slate-200 p-5 w-[280px] flex flex-col gap-6 z-40 transition-all',
+            'absolute top-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-slate-200 p-5 w-[280px] flex flex-col gap-6 z-40 transition-all max-h-[85vh] overflow-y-auto',
             rightPanelState ? 'right-[540px]' : 'right-6',
           )}
         >
@@ -776,7 +786,7 @@ export default function CanvasBoard({
               {selectedNodeObj
                 ? selectedNodeObj.type === 'FloatingText'
                   ? 'Text Style'
-                  : 'Shape Style'
+                  : 'SHAPE STYLE'
                 : 'Line Style'}
             </h4>
           </div>
@@ -784,6 +794,28 @@ export default function CanvasBoard({
           {selectedNodeObj &&
             ['Square', 'Diamond', 'Circle'].includes(selectedNodeObj.type) && (
               <>
+                <div className="space-y-3">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                    Background Opacity
+                  </label>
+                  <div className="flex gap-4 items-center">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      className="flex-1 accent-purple-500 h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
+                      value={selectedNodeObj.style?.opacity ?? 1}
+                      onChange={(e) =>
+                        updateNodeStyle({ opacity: parseFloat(e.target.value) })
+                      }
+                    />
+                    <span className="text-[13px] font-medium text-slate-600 w-8 text-right">
+                      {Math.round((selectedNodeObj.style?.opacity ?? 1) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
                 <div className="space-y-3">
                   <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
                     Fill Color
@@ -883,6 +915,84 @@ export default function CanvasBoard({
                     <span className="text-[13px] font-medium text-slate-600 w-4 text-center">
                       {selectedNodeObj.style?.strokeWidth || 2}
                     </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                    Border Style
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      className={cn(
+                        'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
+                        selectedNodeObj.style?.strokeDasharray === 'none' ||
+                          !selectedNodeObj.style?.strokeDasharray
+                          ? 'border-purple-500 bg-purple-50 text-purple-700'
+                          : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
+                      )}
+                      onClick={() =>
+                        updateNodeStyle({ strokeDasharray: 'none' })
+                      }
+                    >
+                      <svg width="24" height="2" className="overflow-visible">
+                        <line
+                          x1="0"
+                          y1="1"
+                          x2="24"
+                          y2="1"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      className={cn(
+                        'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
+                        selectedNodeObj.style?.strokeDasharray === '8 8'
+                          ? 'border-purple-500 bg-purple-50 text-purple-700'
+                          : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
+                      )}
+                      onClick={() =>
+                        updateNodeStyle({ strokeDasharray: '8 8' })
+                      }
+                    >
+                      <svg width="24" height="2" className="overflow-visible">
+                        <line
+                          x1="0"
+                          y1="1"
+                          x2="24"
+                          y2="1"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeDasharray="6 6"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      className={cn(
+                        'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
+                        selectedNodeObj.style?.strokeDasharray === '4 4'
+                          ? 'border-purple-500 bg-purple-50 text-purple-700'
+                          : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
+                      )}
+                      onClick={() =>
+                        updateNodeStyle({ strokeDasharray: '4 4' })
+                      }
+                    >
+                      <svg width="24" height="2" className="overflow-visible">
+                        <line
+                          x1="0"
+                          y1="1"
+                          x2="24"
+                          y2="1"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeDasharray="2 4"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </>
