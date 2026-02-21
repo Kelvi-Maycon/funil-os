@@ -23,7 +23,15 @@ export type Node = {
   type: string
   x: number
   y: number
+  width?: number
+  height?: number
   data: NodeData
+  style?: {
+    fill?: string
+    stroke?: string
+    strokeWidth?: number
+    color?: string
+  }
 }
 export type Edge = {
   id: string

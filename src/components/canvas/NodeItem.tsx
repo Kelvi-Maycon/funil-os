@@ -57,6 +57,8 @@ type NodeItemProps = {
   onMoveStart: () => void
   onMove: (x: number, y: number) => void
   onMoveEnd: (x: number, y: number) => void
+  onResize?: (x: number, y: number, w: number, h: number) => void
+  onResizeEnd?: (x: number, y: number, w: number, h: number) => void
   scale: number
   onOpenRightPanel: (tab: string) => void
   onOpenSettings: () => void
@@ -78,6 +80,8 @@ export default function NodeItem({
   onMoveStart,
   onMove,
   onMoveEnd,
+  onResize,
+  onResizeEnd,
   scale,
   onOpenRightPanel,
   onOpenSettings,
@@ -89,6 +93,7 @@ export default function NodeItem({
   onDropResource,
 }: NodeItemProps) {
   const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const textRef = useRef<HTMLDivElement>(null)
 
@@ -103,6 +108,7 @@ export default function NodeItem({
   )
 
   const isPanMode = activeTool === 'Pan'
+  const isSelectMode = activeTool === 'Select'
 
   useEffect(() => {
     if (node.type === 'FloatingText' && node.data.name === 'New Text') {
@@ -153,7 +159,9 @@ export default function NodeItem({
       target.closest('button') ||
       target.closest('.interactive-icon') ||
       target.closest('[role="checkbox"]') ||
-      target.closest('input')
+      target.closest('input') ||
+      target.closest('.resize-handle') ||
+      !isSelectMode
     )
       return
     e.stopPropagation()
@@ -181,9 +189,7 @@ export default function NodeItem({
     const handlePointerUp = (upEv: PointerEvent) => {
       try {
         target.releasePointerCapture(upEv.pointerId)
-      } catch (err) {
-        // ignore
-      }
+      } catch (err) {}
       setIsDragging(false)
       document.body.style.userSelect = ''
       let finalX = initialX + (upEv.clientX - startX) / scale
@@ -193,6 +199,108 @@ export default function NodeItem({
         finalY = Math.round(finalY / 28) * 28
       }
       onMoveEnd(finalX, finalY)
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+    }
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+  }
+
+  const handleResizeStart = (e: React.PointerEvent, corner: string) => {
+    e.stopPropagation()
+    const target = e.target as HTMLElement
+    target.setPointerCapture(e.pointerId)
+    setIsResizing(true)
+    onSelect()
+    document.body.style.userSelect = 'none'
+
+    const startX = e.clientX
+    const startY = e.clientY
+    const initialX = node.x
+    const initialY = node.y
+    const initialW = node.width || 120
+    const initialH = node.height || 120
+    const isSquare = e.shiftKey
+
+    const handlePointerMove = (moveEv: PointerEvent) => {
+      let dx = (moveEv.clientX - startX) / scale
+      let dy = (moveEv.clientY - startY) / scale
+
+      let newX = initialX
+      let newY = initialY
+      let newW = initialW
+      let newH = initialH
+
+      if (corner.includes('e')) newW = Math.max(20, initialW + dx)
+      if (corner.includes('s')) newH = Math.max(20, initialH + dy)
+      if (corner.includes('w')) {
+        const mw = Math.max(20, initialW - dx)
+        newX = initialX + (initialW - mw)
+        newW = mw
+      }
+      if (corner.includes('n')) {
+        const mh = Math.max(20, initialH - dy)
+        newY = initialY + (initialH - mh)
+        newH = mh
+      }
+
+      if (isSquare) {
+        const size = Math.max(newW, newH)
+        newW = size
+        newH = size
+      }
+
+      if (snapToGrid) {
+        newX = Math.round(newX / 28) * 28
+        newY = Math.round(newY / 28) * 28
+        newW = Math.round(newW / 28) * 28
+        newH = Math.round(newH / 28) * 28
+      }
+
+      onResize?.(newX, newY, newW, newH)
+    }
+
+    const handlePointerUp = (upEv: PointerEvent) => {
+      try {
+        target.releasePointerCapture(upEv.pointerId)
+      } catch (err) {}
+      setIsResizing(false)
+      document.body.style.userSelect = ''
+
+      let dx = (upEv.clientX - startX) / scale
+      let dy = (upEv.clientY - startY) / scale
+
+      let newX = initialX
+      let newY = initialY
+      let newW = initialW
+      let newH = initialH
+
+      if (corner.includes('e')) newW = Math.max(20, initialW + dx)
+      if (corner.includes('s')) newH = Math.max(20, initialH + dy)
+      if (corner.includes('w')) {
+        const mw = Math.max(20, initialW - dx)
+        newX = initialX + (initialW - mw)
+        newW = mw
+      }
+      if (corner.includes('n')) {
+        const mh = Math.max(20, initialH - dy)
+        newY = initialY + (initialH - mh)
+        newH = mh
+      }
+
+      if (isSquare) {
+        const size = Math.max(newW, newH)
+        newW = size
+        newH = size
+      }
+
+      if (snapToGrid) {
+        newX = Math.round(newX / 28) * 28
+        newY = Math.round(newY / 28) * 28
+        newW = Math.round(newW / 28) * 28
+        newH = Math.round(newH / 28) * 28
+      }
+      onResizeEnd?.(newX, newY, newW, newH)
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
@@ -214,15 +322,20 @@ export default function NodeItem({
     return (
       <div
         className={cn(
-          'absolute top-0 left-0 pointer-events-auto min-w-[50px] p-2 text-slate-800 z-10 transition-all group outline-none',
+          'absolute top-0 left-0 pointer-events-auto min-w-[50px] p-2 z-10 transition-all group outline-none',
           selected && 'ring-2 ring-primary/20 bg-primary/5 rounded-md',
           isDragging
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing'
             : isPanMode
               ? 'cursor-grab'
-              : 'cursor-pointer',
+              : isSelectMode
+                ? 'cursor-pointer'
+                : '',
         )}
-        style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
+        style={{
+          transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
+          color: node.style?.color || '#1e293b',
+        }}
         onPointerDown={handlePointerDown}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -231,7 +344,7 @@ export default function NodeItem({
         <div
           ref={textRef}
           className="font-medium text-[15px] whitespace-pre-wrap outline-none cursor-text min-h-[24px] min-w-[20px]"
-          contentEditable
+          contentEditable={isSelectMode}
           suppressContentEditableWarning
           onPointerDown={(e) => {
             if (!isPanMode) e.stopPropagation()
@@ -244,7 +357,7 @@ export default function NodeItem({
           {node.data.name}
         </div>
 
-        {!isPanMode && (
+        {!isPanMode && isSelectMode && (
           <div
             className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon opacity-0 group-hover:opacity-100 transition-opacity"
             onPointerDown={(e) => {
@@ -284,62 +397,108 @@ export default function NodeItem({
   }
 
   if (['Square', 'Diamond', 'Circle'].includes(node.type)) {
+    const w = node.width || 120
+    const h = node.height || 120
+
     return (
       <div
         className={cn(
-          'absolute top-0 left-0 pointer-events-auto w-[120px] h-[120px] flex items-center justify-center bg-white border-2 border-slate-200 z-10 transition-all group text-slate-700',
-          selected && 'border-purple-400 ring-4 ring-purple-100 shadow-md',
-          isDragging
-            ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing shadow-lg'
+          'absolute top-0 left-0 pointer-events-auto flex items-center justify-center z-10 transition-all group text-slate-700',
+          selected && 'shadow-md',
+          isDragging || isResizing
+            ? 'opacity-90 z-50 shadow-lg'
             : isPanMode
               ? 'cursor-grab'
-              : 'cursor-pointer',
-          node.type === 'Circle' && 'rounded-full',
-          node.type === 'Square' && 'rounded-2xl',
+              : isSelectMode
+                ? 'cursor-pointer'
+                : '',
+          isDragging && 'scale-[1.02] cursor-grabbing',
         )}
         style={{
-          transform: `translate3d(${node.x}px, ${node.y}px, 0) ${node.type === 'Diamond' ? 'rotate(45deg)' : ''}`,
+          transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
+          width: w,
+          height: h,
         }}
         onPointerDown={handlePointerDown}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         data-node-id={node.id}
       >
-        <div
-          className="absolute -top-3 -right-3 flex items-center gap-1.5 z-20"
-          style={{
-            transform:
-              node.type === 'Diamond'
-                ? 'rotate(-45deg) translate(8px, -8px)'
-                : 'none',
-          }}
+        <svg
+          className="absolute inset-0 w-full h-full overflow-visible pointer-events-none"
+          viewBox={`0 0 ${w} ${h}`}
         >
-          <div
-            className={cn(
-              'flex items-center gap-1.5 transition-opacity',
-              selected || isHovered
-                ? 'opacity-100'
-                : 'opacity-0 pointer-events-none',
-            )}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onDelete()
-                  }}
-                  className="interactive-icon w-7 h-7 bg-white border border-slate-100 rounded-full flex items-center justify-center text-red-400 hover:text-red-600 shadow-sm transition-transform hover:scale-110"
-                >
-                  <Trash2 size={13} strokeWidth={2.5} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>Excluir</TooltipContent>
-            </Tooltip>
-          </div>
+          {node.type === 'Square' && (
+            <rect
+              x="0"
+              y="0"
+              width={w}
+              height={h}
+              rx={8}
+              fill={node.style?.fill || 'transparent'}
+              stroke={node.style?.stroke || '#1e293b'}
+              strokeWidth={node.style?.strokeWidth || 2}
+              className={cn(
+                'transition-all pointer-events-auto',
+                selected && 'stroke-purple-400 drop-shadow-md',
+              )}
+            />
+          )}
+          {node.type === 'Circle' && (
+            <ellipse
+              cx={w / 2}
+              cy={h / 2}
+              rx={w / 2}
+              ry={h / 2}
+              fill={node.style?.fill || 'transparent'}
+              stroke={node.style?.stroke || '#1e293b'}
+              strokeWidth={node.style?.strokeWidth || 2}
+              className={cn(
+                'transition-all pointer-events-auto',
+                selected && 'stroke-purple-400 drop-shadow-md',
+              )}
+            />
+          )}
+          {node.type === 'Diamond' && (
+            <polygon
+              points={`${w / 2},0 ${w},${h / 2} ${w / 2},${h} 0,${h / 2}`}
+              fill={node.style?.fill || 'transparent'}
+              stroke={node.style?.stroke || '#1e293b'}
+              strokeWidth={node.style?.strokeWidth || 2}
+              strokeLinejoin="round"
+              className={cn(
+                'transition-all pointer-events-auto',
+                selected && 'stroke-purple-400 drop-shadow-md',
+              )}
+            />
+          )}
+        </svg>
+
+        <div
+          className={cn(
+            'absolute -top-6 -right-6 flex items-center gap-1.5 z-20 transition-opacity',
+            selected || isHovered
+              ? 'opacity-100'
+              : 'opacity-0 pointer-events-none',
+          )}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete()
+                }}
+                className="interactive-icon w-7 h-7 bg-white border border-slate-100 rounded-full flex items-center justify-center text-red-400 hover:text-red-600 shadow-sm transition-transform hover:scale-110"
+              >
+                <Trash2 size={13} strokeWidth={2.5} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Excluir</TooltipContent>
+          </Tooltip>
         </div>
 
-        {!isPanMode && (
+        {!isPanMode && isSelectMode && (
           <div
             className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon opacity-0 group-hover:opacity-100 transition-opacity"
             onPointerDown={(e) => {
@@ -349,6 +508,45 @@ export default function NodeItem({
           >
             <div className="w-3 h-3 rounded-full bg-white border-2 border-slate-200 group-hover/port:border-purple-500 group-hover/port:scale-125 transition-all shadow-sm" />
           </div>
+        )}
+
+        {selected && !isPanMode && isSelectMode && (
+          <>
+            <div className="absolute top-0 left-0 w-full h-full border border-purple-500/50 pointer-events-none" />
+            <div
+              className="resize-handle nw-resize absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-purple-500 rounded-sm cursor-nwse-resize z-30"
+              onPointerDown={(e) => handleResizeStart(e, 'nw')}
+            />
+            <div
+              className="resize-handle ne-resize absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-purple-500 rounded-sm cursor-nesw-resize z-30"
+              onPointerDown={(e) => handleResizeStart(e, 'ne')}
+            />
+            <div
+              className="resize-handle sw-resize absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-purple-500 rounded-sm cursor-nesw-resize z-30"
+              onPointerDown={(e) => handleResizeStart(e, 'sw')}
+            />
+            <div
+              className="resize-handle se-resize absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-purple-500 rounded-sm cursor-nwse-resize z-30"
+              onPointerDown={(e) => handleResizeStart(e, 'se')}
+            />
+
+            <div
+              className="resize-handle n-resize absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-purple-500 rounded-sm cursor-ns-resize z-30"
+              onPointerDown={(e) => handleResizeStart(e, 'n')}
+            />
+            <div
+              className="resize-handle s-resize absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border border-purple-500 rounded-sm cursor-ns-resize z-30"
+              onPointerDown={(e) => handleResizeStart(e, 's')}
+            />
+            <div
+              className="resize-handle e-resize absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 bg-white border border-purple-500 rounded-sm cursor-ew-resize z-30"
+              onPointerDown={(e) => handleResizeStart(e, 'e')}
+            />
+            <div
+              className="resize-handle w-resize absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 bg-white border border-purple-500 rounded-sm cursor-ew-resize z-30"
+              onPointerDown={(e) => handleResizeStart(e, 'w')}
+            />
+          </>
         )}
       </div>
     )
@@ -364,7 +562,9 @@ export default function NodeItem({
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing shadow-lg'
             : isPanMode
               ? 'cursor-grab'
-              : 'cursor-pointer',
+              : isSelectMode
+                ? 'cursor-pointer'
+                : '',
         )}
         style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
         onPointerDown={handlePointerDown}
@@ -374,7 +574,7 @@ export default function NodeItem({
       >
         <div
           className="font-medium text-[15px] whitespace-pre-wrap outline-none cursor-text"
-          contentEditable
+          contentEditable={isSelectMode}
           suppressContentEditableWarning
           onPointerDown={(e) => {
             if (!isPanMode) e.stopPropagation()
@@ -397,12 +597,14 @@ export default function NodeItem({
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing shadow-lg'
             : isPanMode
               ? 'cursor-grab'
-              : 'cursor-pointer',
+              : isSelectMode
+                ? 'cursor-pointer'
+                : '',
         )}
         style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
         onPointerDown={handlePointerDown}
         onDoubleClick={(e) => {
-          if (!isPanMode) {
+          if (!isPanMode && isSelectMode) {
             e.stopPropagation()
             onOpenRightPanel('assets')
           }
@@ -417,7 +619,7 @@ export default function NodeItem({
           className="w-full h-auto object-cover pointer-events-none select-none"
         />
 
-        {!isPanMode && (
+        {!isPanMode && isSelectMode && (
           <div
             className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon opacity-0 group-hover:opacity-100 transition-opacity"
             onPointerDown={(e) => {
@@ -456,11 +658,17 @@ export default function NodeItem({
         transition: isDragging
           ? 'none'
           : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s, opacity 0.2s, background-color 0.3s',
-        cursor: isPanMode ? 'grab' : isDragging ? 'grabbing' : 'pointer',
+        cursor: isPanMode
+          ? 'grab'
+          : isDragging
+            ? 'grabbing'
+            : isSelectMode
+              ? 'pointer'
+              : '',
       }}
       onPointerDown={handlePointerDown}
       onDoubleClick={(e) => {
-        if (!isPanMode) {
+        if (!isPanMode && isSelectMode) {
           e.stopPropagation()
           onOpenRightPanel('details')
         }
@@ -722,9 +930,9 @@ export default function NodeItem({
         </div>
       )}
 
-      {!isPanMode && (
+      {!isPanMode && isSelectMode && (
         <div
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon opacity-0 group-hover:opacity-100 transition-opacity"
           onPointerDown={(e) => {
             e.stopPropagation()
             onEdgeDragStart(node.id, e)
