@@ -107,7 +107,7 @@ export default function Documents() {
     const childDocs = docs.filter((d) => d.folderId === parentId)
 
     return (
-      <div className="flex flex-col gap-0.5 mt-0.5">
+      <div className="flex flex-col gap-1 mt-1">
         {childFolders.map((folder) => (
           <div key={folder.id} className="flex flex-col">
             <div
@@ -115,15 +115,15 @@ export default function Documents() {
               onDragStart={(e) => onDragStart(e, 'folder', folder.id)}
               onDrop={(e) => onDrop(e, folder.id)}
               onDragOver={onDragOver}
-              className="group flex items-center gap-1.5 py-1.5 pr-2 rounded-md text-sm transition-colors cursor-pointer hover:bg-accent text-foreground select-none"
-              style={{ paddingLeft: `${level * 16 + 8}px` }}
+              className="group flex items-center gap-2 py-2 pr-3 rounded-lg text-md transition-colors cursor-pointer hover:bg-muted text-foreground select-none"
+              style={{ paddingLeft: `${level * 16 + 12}px` }}
             >
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleFolder(folder.id)
                 }}
-                className="p-0.5 hover:bg-muted rounded text-muted-foreground shrink-0 transition-colors"
+                className="p-1 hover:bg-border rounded-md text-muted-foreground shrink-0 transition-colors"
               >
                 {folder.isExpanded ? (
                   <ChevronDown size={14} />
@@ -132,10 +132,12 @@ export default function Documents() {
                 )}
               </button>
               <FolderIcon
-                size={14}
+                size={16}
                 className="text-muted-foreground fill-muted-foreground/20 shrink-0"
               />
-              <span className="truncate flex-1 font-medium">{folder.name}</span>
+              <span className="truncate flex-1 font-semibold">
+                {folder.name}
+              </span>
             </div>
             {folder.isExpanded && renderTree(folder.id, level + 1)}
           </div>
@@ -146,14 +148,14 @@ export default function Documents() {
             draggable
             onDragStart={(e) => onDragStart(e, 'document', doc.id)}
             onClick={() => setActiveId(doc.id)}
-            className={`flex items-center gap-2 py-1.5 pr-2 rounded-md text-sm transition-colors w-full text-left cursor-grab active:cursor-grabbing select-none ${activeId === doc.id ? 'bg-primary/10 text-primary font-medium' : 'text-foreground hover:bg-accent'}`}
+            className={`flex items-center gap-3 py-2 pr-3 rounded-lg text-base transition-colors w-full text-left cursor-grab active:cursor-grabbing select-none ${activeId === doc.id ? 'bg-secondary text-secondary-foreground font-semibold shadow-sm' : 'text-foreground hover:bg-muted'}`}
             style={{
-              paddingLeft: `${level * 16 + (parentId === null ? 8 : 30)}px`,
+              paddingLeft: `${level * 16 + (parentId === null ? 12 : 36)}px`,
             }}
           >
             <FileText
-              size={14}
-              className={`shrink-0 ${activeId === doc.id ? 'text-primary' : 'text-muted-foreground'}`}
+              size={16}
+              className={`shrink-0 ${activeId === doc.id ? 'text-secondary-foreground' : 'text-muted-foreground'}`}
             />
             <span className="truncate flex-1">{doc.title}</span>
           </button>
@@ -164,16 +166,19 @@ export default function Documents() {
 
   return (
     <div className="flex h-full bg-background overflow-hidden animate-fade-in">
-      <div className="w-64 border-r bg-card flex flex-col shrink-0 z-10 shadow-sm">
-        <div className="p-4 border-b flex flex-col gap-2">
-          <Button className="w-full justify-start" onClick={createDoc}>
+      <div className="w-72 border-r border-border bg-card flex flex-col shrink-0 z-10 shadow-sm">
+        <div className="p-6 border-b border-border flex flex-col gap-3">
+          <Button
+            className="w-full justify-start shadow-sm"
+            onClick={createDoc}
+          >
             <Plus size={16} className="mr-2" /> Novo Documento
           </Button>
           <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
             <DialogTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start text-muted-foreground hover:text-foreground"
+                className="w-full justify-start text-muted-foreground hover:text-foreground shadow-sm bg-background border-border"
               >
                 <FolderPlus size={16} className="mr-2" /> Nova Pasta
               </Button>
@@ -182,7 +187,7 @@ export default function Documents() {
               <DialogHeader>
                 <DialogTitle>Criar Nova Pasta</DialogTitle>
               </DialogHeader>
-              <form onSubmit={createFolder} className="space-y-4 pt-4">
+              <form onSubmit={createFolder} className="space-y-4 pt-6">
                 <Input
                   placeholder="Nome da Pasta"
                   value={newFolderName}
@@ -201,37 +206,49 @@ export default function Documents() {
           onDrop={(e) => onDrop(e, null)}
           onDragOver={onDragOver}
         >
-          <div className="p-2 min-h-full">{renderTree(null)}</div>
+          <div className="p-3 min-h-full">{renderTree(null)}</div>
         </ScrollArea>
       </div>
-      <div className="flex-1 overflow-auto bg-card">
+      <div className="flex-1 overflow-auto bg-background p-6">
         {activeDoc ? (
-          <RichTextEditor
-            doc={activeDoc}
-            onTitleChange={(title) =>
-              setDocs(
-                docs.map((d) => (d.id === activeDoc.id ? { ...d, title } : d)),
-              )
-            }
-            onProjectChange={(projectId) =>
-              setDocs(
-                docs.map((d) =>
-                  d.id === activeDoc.id ? { ...d, projectId } : d,
-                ),
-              )
-            }
-            onChange={(content) =>
-              setDocs(
-                docs.map((d) =>
-                  d.id === activeDoc.id ? { ...d, content } : d,
-                ),
-              )
-            }
-          />
+          <div className="max-w-4xl mx-auto h-full rounded-2xl bg-card border border-border shadow-sm overflow-hidden flex flex-col">
+            <RichTextEditor
+              doc={activeDoc}
+              onTitleChange={(title) =>
+                setDocs(
+                  docs.map((d) =>
+                    d.id === activeDoc.id ? { ...d, title } : d,
+                  ),
+                )
+              }
+              onProjectChange={(projectId) =>
+                setDocs(
+                  docs.map((d) =>
+                    d.id === activeDoc.id ? { ...d, projectId } : d,
+                  ),
+                )
+              }
+              onChange={(content) =>
+                setDocs(
+                  docs.map((d) =>
+                    d.id === activeDoc.id ? { ...d, content } : d,
+                  ),
+                )
+              }
+            />
+          </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground flex-col gap-4">
-            <FileText size={48} className="text-muted/50" />
-            <span>Selecione um documento ou crie um novo.</span>
+          <div className="flex items-center justify-center h-full text-muted-foreground flex-col gap-4 max-w-lg mx-auto bg-card rounded-2xl border border-dashed border-border shadow-sm min-h-[400px]">
+            <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center text-primary mb-2">
+              <FileText size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-foreground">Documentos</h3>
+            <span className="text-base text-center">
+              Selecione um documento na barra lateral ou crie um novo.
+            </span>
+            <Button onClick={createDoc} className="mt-2">
+              <Plus size={16} className="mr-2" /> Novo Documento
+            </Button>
           </div>
         )}
       </div>

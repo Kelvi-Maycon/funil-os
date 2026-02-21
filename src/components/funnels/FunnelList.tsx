@@ -47,7 +47,7 @@ export default function FunnelList({
 
   if (folders.length === 0 && funnels.length === 0) {
     return (
-      <div className="py-12 text-center text-muted-foreground border border-dashed rounded-lg bg-card">
+      <div className="py-12 text-center text-muted-foreground border border-dashed border-border rounded-xl bg-card">
         Esta pasta está vazia
       </div>
     )
@@ -89,7 +89,7 @@ export default function FunnelList({
           Mover
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="text-destructive"
+          className="text-danger"
           onClick={(e) => {
             e.stopPropagation()
             onDelete(item.id, type)
@@ -102,9 +102,9 @@ export default function FunnelList({
   )
 
   return (
-    <div className="rounded-md border bg-card overflow-hidden shadow-sm">
+    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
       <Table>
-        <TableHeader className="bg-muted/50">
+        <TableHeader>
           <TableRow>
             <TableHead>Nome</TableHead>
             <TableHead>Projeto</TableHead>
@@ -116,12 +116,12 @@ export default function FunnelList({
           {folders.map((f) => (
             <TableRow
               key={f.id}
-              className="hover:bg-muted/30 cursor-pointer"
+              className="hover:bg-[#F9FAFB] cursor-pointer text-base"
               onClick={() => onOpenFolder(f.id)}
             >
-              <TableCell className="font-medium flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-blue-100/50 flex items-center justify-center text-blue-600 shrink-0">
-                  <FolderIcon size={16} className="fill-current opacity-20" />
+              <TableCell className="font-semibold flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-info-bg flex items-center justify-center text-info shrink-0">
+                  <FolderIcon size={20} className="fill-current opacity-20" />
                 </div>
                 {f.name}
               </TableCell>
@@ -129,7 +129,7 @@ export default function FunnelList({
               <TableCell>
                 <Badge
                   variant="secondary"
-                  className="bg-blue-100/50 text-blue-700 hover:bg-blue-100/50 border-none"
+                  className="bg-info-bg text-info-foreground hover:bg-info-bg/80 border-none font-medium"
                 >
                   Pasta
                 </Badge>
@@ -142,12 +142,12 @@ export default function FunnelList({
           {funnels.map((f) => (
             <TableRow
               key={f.id}
-              className="hover:bg-muted/30 cursor-pointer"
+              className="hover:bg-[#F9FAFB] cursor-pointer text-base"
               onClick={() => navigate(`/canvas/${f.id}`)}
             >
               <TableCell className="font-medium flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-purple-100/50 flex items-center justify-center text-purple-600 shrink-0">
-                  <Network size={16} />
+                <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-primary shrink-0">
+                  <Network size={20} />
                 </div>
                 {f.name}
               </TableCell>
@@ -155,7 +155,16 @@ export default function FunnelList({
                 {getProjectName(f.projectId)}
               </TableCell>
               <TableCell>
-                <Badge variant="outline">{f.status}</Badge>
+                <Badge
+                  variant="outline"
+                  className={
+                    f.status === 'Ativo'
+                      ? 'bg-success-bg text-success-foreground border-none font-medium'
+                      : 'bg-muted text-muted-foreground border-none font-medium'
+                  }
+                >
+                  {f.status}
+                </Badge>
               </TableCell>
               <TableCell className="text-right">
                 <ActionMenu item={f} type="funnel" />

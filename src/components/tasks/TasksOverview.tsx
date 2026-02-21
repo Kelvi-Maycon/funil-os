@@ -37,7 +37,7 @@ const recentActivities = [
     task: 'Refactor Auth',
     time: '2 hours ago',
     icon: MessageSquare,
-    iconColor: 'text-amber-500',
+    iconColor: 'text-warning',
   },
   {
     id: 2,
@@ -48,7 +48,7 @@ const recentActivities = [
     task: 'Design Home',
     time: '4 hours ago',
     icon: ArrowRightCircle,
-    iconColor: 'text-blue-500',
+    iconColor: 'text-info',
   },
   {
     id: 3,
@@ -59,7 +59,7 @@ const recentActivities = [
     task: 'Setup CI/CD',
     time: 'Yesterday',
     icon: Paperclip,
-    iconColor: 'text-slate-500',
+    iconColor: 'text-muted-foreground',
   },
   {
     id: 4,
@@ -70,7 +70,7 @@ const recentActivities = [
     task: 'Fix Navigation Bug',
     time: 'Yesterday',
     icon: AlertCircle,
-    iconColor: 'text-red-500',
+    iconColor: 'text-danger',
   },
 ]
 
@@ -107,51 +107,55 @@ export default function TasksOverview({ tasks }: { tasks: Task[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-card">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-card shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Tasks
             </CardTitle>
-            <ListTodo className="h-4 w-4 text-muted-foreground" />
+            <ListTodo className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{total}</div>
+            <div className="text-4xl font-bold text-foreground">{total}</div>
           </CardContent>
         </Card>
-        <Card className="bg-amber-50/50 border-amber-100">
+        <Card className="bg-warning-bg border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-amber-700">
+            <CardTitle className="text-sm font-medium text-warning-foreground">
               In Progress
             </CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
+            <Clock className="h-5 w-5 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-900">
+            <div className="text-4xl font-bold text-warning-foreground">
               {inProgress}
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-green-50/50 border-green-100">
+        <Card className="bg-success-bg border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-green-700">
+            <CardTitle className="text-sm font-medium text-success-foreground">
               Completed
             </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-900">{completed}</div>
+            <div className="text-4xl font-bold text-success-foreground">
+              {completed}
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-red-50/50 border-red-100">
+        <Card className="bg-danger-bg border-none shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-red-700">
+            <CardTitle className="text-sm font-medium text-danger-foreground">
               Overdue
             </CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
+            <AlertCircle className="h-5 w-5 text-danger" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-900">{overdue}</div>
+            <div className="text-4xl font-bold text-danger-foreground">
+              {overdue}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -159,9 +163,9 @@ export default function TasksOverview({ tasks }: { tasks: Task[] }) {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="col-span-1 lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-lg">Priority Distribution</CardTitle>
+            <CardTitle className="text-xl">Priority Distribution</CardTitle>
           </CardHeader>
-          <CardContent className="h-72">
+          <CardContent className="h-[300px]">
             <ChartContainer
               config={{
                 total: { label: 'Total', color: 'hsl(var(--primary))' },
@@ -175,20 +179,20 @@ export default function TasksOverview({ tasks }: { tasks: Task[] }) {
                 >
                   <XAxis
                     dataKey="name"
-                    fontSize={12}
+                    fontSize={13}
                     tickLine={false}
                     axisLine={false}
                   />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis fontSize={13} tickLine={false} axisLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                     {priorityData.map((entry, index) => {
                       const color =
                         entry.name === 'Alta'
-                          ? '#ef4444'
+                          ? '#EF4444'
                           : entry.name === 'Média'
-                            ? '#6366f1'
-                            : '#cbd5e1'
+                            ? '#3B82F6'
+                            : '#D1D5DB'
                       return <Cell key={`cell-${index}`} fill={color} />
                     })}
                   </Bar>
@@ -200,18 +204,20 @@ export default function TasksOverview({ tasks }: { tasks: Task[] }) {
 
         <Card className="col-span-1 lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-lg">Upcoming Deadlines</CardTitle>
+            <CardTitle className="text-xl">Upcoming Deadlines</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-5">
               {upcomingTasks.map((t) => (
                 <div
                   key={t.id}
-                  className="flex items-center justify-between border-b last:border-0 pb-4 last:pb-0"
+                  className="flex items-center justify-between border-b border-border last:border-0 pb-4 last:pb-0"
                 >
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium text-sm">{t.title}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-base text-foreground">
+                      {t.title}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
                       {format(new Date(t.deadline), 'MMM dd, yyyy')}
                     </span>
                   </div>
@@ -219,10 +225,10 @@ export default function TasksOverview({ tasks }: { tasks: Task[] }) {
                     variant="outline"
                     className={
                       t.priority === 'Alta'
-                        ? 'text-red-600 bg-red-50 border-red-200'
+                        ? 'bg-danger-bg text-danger-foreground border-none px-3'
                         : t.priority === 'Média'
-                          ? 'text-indigo-600 bg-indigo-50 border-indigo-200'
-                          : 'text-slate-600 bg-slate-50 border-slate-200'
+                          ? 'bg-info-bg text-info-foreground border-none px-3'
+                          : 'bg-muted text-muted-foreground border-none px-3'
                     }
                   >
                     {t.priority}
@@ -230,7 +236,7 @@ export default function TasksOverview({ tasks }: { tasks: Task[] }) {
                 </div>
               ))}
               {upcomingTasks.length === 0 && (
-                <div className="text-sm text-muted-foreground text-center py-8">
+                <div className="text-base text-muted-foreground text-center py-8">
                   No upcoming deadlines
                 </div>
               )}
@@ -240,7 +246,7 @@ export default function TasksOverview({ tasks }: { tasks: Task[] }) {
 
         <Card className="col-span-1 md:col-span-2 lg:col-span-1 flex flex-col">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-xl flex items-center gap-2">
               <Activity className="w-5 h-5 text-muted-foreground" />
               Recent Updates
             </CardTitle>
@@ -252,21 +258,21 @@ export default function TasksOverview({ tasks }: { tasks: Task[] }) {
                 return (
                   <div key={activity.id} className="flex gap-4">
                     <div className="relative mt-1 shrink-0">
-                      <Avatar className="w-8 h-8 ring-2 ring-background">
+                      <Avatar className="w-10 h-10 ring-2 ring-background shadow-sm">
                         <AvatarImage src={activity.avatar} />
                         <AvatarFallback>{activity.user[0]}</AvatarFallback>
                       </Avatar>
                       <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 shadow-sm">
-                        <Icon className={`w-3 h-3 ${activity.iconColor}`} />
+                        <Icon className={`w-4 h-4 ${activity.iconColor}`} />
                       </div>
                     </div>
-                    <div className="flex flex-col flex-1 gap-0.5">
-                      <div className="text-sm leading-snug text-slate-600">
-                        <span className="font-semibold text-slate-800">
+                    <div className="flex flex-col flex-1 gap-1">
+                      <div className="text-base leading-snug text-muted-foreground">
+                        <span className="font-semibold text-foreground">
                           {activity.user}
                         </span>{' '}
                         {activity.action}{' '}
-                        <span className="font-medium text-slate-800">
+                        <span className="font-semibold text-foreground">
                           {activity.task}
                         </span>
                         {activity.target && (
@@ -275,14 +281,14 @@ export default function TasksOverview({ tasks }: { tasks: Task[] }) {
                             to{' '}
                             <Badge
                               variant="secondary"
-                              className="text-[10px] px-1.5 py-0 h-4"
+                              className="text-xs px-2 py-0.5 bg-muted text-muted-foreground border-none"
                             >
                               {activity.target}
                             </Badge>
                           </>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground font-medium">
+                      <span className="text-sm text-muted-foreground/60 font-medium">
                         {activity.time}
                       </span>
                     </div>

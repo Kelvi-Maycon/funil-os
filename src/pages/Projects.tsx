@@ -90,10 +90,12 @@ export default function Projects() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Projetos</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+            Projetos
+          </h1>
           <FolderBreadcrumbs
             currentFolderId={currentFolderId}
             folders={moduleFolders}
@@ -101,7 +103,7 @@ export default function Projects() {
             rootName="Projetos"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <ViewToggle view={view} onChange={setView} />
           <CreateFolderDialog onConfirm={handleCreateFolder} />
           <Dialog open={open} onOpenChange={setOpen}>
@@ -114,7 +116,7 @@ export default function Projects() {
               <DialogHeader>
                 <DialogTitle>Criar Novo Projeto</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleCreateProject} className="space-y-4 pt-4">
+              <form onSubmit={handleCreateProject} className="space-y-4 pt-6">
                 <Input
                   placeholder="Nome do Projeto"
                   value={newName}
@@ -139,30 +141,35 @@ export default function Projects() {
           placeholder="Buscar projetos..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-white"
+          className="pl-10 bg-card"
         />
       </div>
 
       {currentFolders.length === 0 && filteredProjects.length === 0 ? (
-        <div className="py-20 text-center flex flex-col items-center">
+        <div className="py-20 text-center flex flex-col items-center bg-card rounded-xl border border-dashed border-border shadow-sm">
           <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
             <FolderIcon size={32} className="text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium">Vazio</h3>
-          <p className="text-muted-foreground mb-4">
+          <h3 className="text-xl font-bold text-foreground">Vazio</h3>
+          <p className="text-base text-muted-foreground mt-2 mb-6">
             Crie um projeto ou uma pasta para começar.
           </p>
+          <Button onClick={() => setOpen(true)}>
+            <Plus size={16} className="mr-2" /> Criar Primeiro Projeto
+          </Button>
         </div>
       ) : view === 'grid' ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {currentFolders.map((f) => (
             <Card
               key={f.id}
               onClick={() => setCurrentFolderId(f.id)}
-              className="hover:shadow-md transition-all cursor-pointer h-full group border-border hover:border-primary/50 flex items-center p-4 gap-3"
+              className="hover:shadow-md transition-all cursor-pointer h-full group flex items-center p-6 gap-4"
             >
-              <FolderIcon className="text-primary fill-primary/20" size={24} />
-              <span className="font-semibold group-hover:text-primary transition-colors">
+              <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center text-primary shrink-0">
+                <FolderIcon size={24} className="fill-current opacity-20" />
+              </div>
+              <span className="font-semibold text-lg group-hover:text-primary transition-colors">
                 {f.name}
               </span>
             </Card>
@@ -171,20 +178,20 @@ export default function Projects() {
             <Card
               key={p.id}
               onClick={() => navigate(`/projetos/${p.id}`)}
-              className="hover:shadow-md transition-all cursor-pointer h-full group border-border hover:border-primary/50 flex flex-col"
+              className="hover:shadow-md transition-all cursor-pointer h-full group flex flex-col"
             >
-              <CardHeader className="pb-3 flex-1">
+              <CardHeader className="pb-4 flex-1">
                 <div className="flex justify-between items-start gap-2">
-                  <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors line-clamp-1">
+                  <CardTitle className="text-xl group-hover:text-primary transition-colors line-clamp-1">
                     {p.name}
                   </CardTitle>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <Badge
-                      variant={p.status === 'Ativo' ? 'default' : 'secondary'}
+                      variant="outline"
                       className={
                         p.status === 'Ativo'
-                          ? 'bg-green-500 hover:bg-green-600'
-                          : ''
+                          ? 'bg-success-bg text-success-foreground border-none'
+                          : 'bg-muted text-muted-foreground border-none'
                       }
                     >
                       {p.status}
@@ -205,7 +212,7 @@ export default function Projects() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className="text-base text-muted-foreground line-clamp-2">
                   {p.description}
                 </p>
               </CardContent>
@@ -213,7 +220,7 @@ export default function Projects() {
           ))}
         </div>
       ) : (
-        <div className="bg-white border rounded-lg overflow-hidden">
+        <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -229,10 +236,10 @@ export default function Projects() {
                   onClick={() => setCurrentFolderId(f.id)}
                   className="cursor-pointer group"
                 >
-                  <TableCell className="font-medium flex items-center gap-2 py-4">
+                  <TableCell className="font-medium flex items-center gap-3 py-4 text-base">
                     <FolderIcon
                       className="text-primary fill-primary/20 group-hover:text-primary transition-colors"
-                      size={16}
+                      size={20}
                     />
                     {f.name}
                   </TableCell>
@@ -244,16 +251,16 @@ export default function Projects() {
                 <TableRow
                   key={p.id}
                   onClick={() => navigate(`/projetos/${p.id}`)}
-                  className="cursor-pointer"
+                  className="cursor-pointer text-base"
                 >
                   <TableCell className="font-medium py-4">{p.name}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={p.status === 'Ativo' ? 'default' : 'secondary'}
+                      variant="outline"
                       className={
                         p.status === 'Ativo'
-                          ? 'bg-green-500 hover:bg-green-600'
-                          : ''
+                          ? 'bg-success-bg text-success-foreground border-none'
+                          : 'bg-muted text-muted-foreground border-none'
                       }
                     >
                       {p.status}

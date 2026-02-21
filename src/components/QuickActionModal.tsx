@@ -187,9 +187,9 @@ export default function QuickActionModal() {
             {titleMap[state.type]}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-6">
           {['task', 'document', 'insight', 'swipe'].includes(state.type) && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Título</Label>
               <Input
                 required
@@ -203,7 +203,7 @@ export default function QuickActionModal() {
           )}
 
           {['canvas', 'asset'].includes(state.type) && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Nome</Label>
               <Input
                 required
@@ -217,9 +217,10 @@ export default function QuickActionModal() {
           )}
 
           {['task'].includes(state.type) && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Descrição</Label>
               <Textarea
+                className="resize-none h-24"
                 value={formData.description || ''}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -229,9 +230,10 @@ export default function QuickActionModal() {
           )}
 
           {['document'].includes(state.type) && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Conteúdo</Label>
               <Textarea
+                className="resize-none h-32"
                 value={formData.content || ''}
                 onChange={(e) =>
                   setFormData({ ...formData, content: e.target.value })
@@ -241,7 +243,7 @@ export default function QuickActionModal() {
           )}
 
           {['asset', 'swipe'].includes(state.type) && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>URL da Imagem/Link</Label>
               <Input
                 required
@@ -258,7 +260,7 @@ export default function QuickActionModal() {
           )}
 
           {['asset', 'swipe'].includes(state.type) && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Categoria</Label>
               <Input
                 required
@@ -272,7 +274,7 @@ export default function QuickActionModal() {
 
           {state.type === 'insight' && (
             <>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>Tipo</Label>
                 <Select
                   value={formData.type || 'Observação'}
@@ -290,10 +292,11 @@ export default function QuickActionModal() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>Conteúdo</Label>
                 <Textarea
                   required
+                  className="resize-none h-24"
                   value={formData.content || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, content: e.target.value })
@@ -303,7 +306,7 @@ export default function QuickActionModal() {
             </>
           )}
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>Projeto</Label>
             <Select
               disabled={!!state.defaultProjectId}
@@ -327,13 +330,13 @@ export default function QuickActionModal() {
               </SelectContent>
             </Select>
             {!!state.defaultProjectId && (
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-2">
                 Vinculado automaticamente ao projeto atual.
               </p>
             )}
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>

@@ -70,10 +70,12 @@ export default function Assets() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Assets</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+            Assets
+          </h1>
           <FolderBreadcrumbs
             currentFolderId={currentFolderId}
             folders={moduleFolders}
@@ -81,7 +83,7 @@ export default function Assets() {
             rootName="Assets"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <ViewToggle view={view} onChange={setView} />
           <CreateFolderDialog onConfirm={handleCreateFolder} />
           <Button onClick={() => setAction({ type: 'asset', mode: 'create' })}>
@@ -96,7 +98,7 @@ export default function Assets() {
           size={18}
         />
         <Input
-          className="pl-10 bg-white"
+          className="pl-10 bg-card"
           placeholder="Buscar assets..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -104,14 +106,17 @@ export default function Assets() {
       </div>
 
       {currentFolders.length === 0 && filteredAssets.length === 0 ? (
-        <div className="py-20 text-center flex flex-col items-center">
-          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-            <ImageIcon size={32} className="text-muted-foreground" />
+        <div className="py-20 text-center flex flex-col items-center bg-card rounded-xl border border-dashed border-border shadow-sm">
+          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4 text-muted-foreground">
+            <ImageIcon size={32} />
           </div>
-          <h3 className="text-lg font-medium">Vazio</h3>
-          <p className="text-muted-foreground mb-4">
+          <h3 className="text-xl font-bold text-foreground">Vazio</h3>
+          <p className="text-base text-muted-foreground mb-6 mt-2">
             Faça upload de um asset ou crie uma pasta.
           </p>
+          <Button onClick={() => setAction({ type: 'asset', mode: 'create' })}>
+            <Plus className="mr-2" size={16} /> Novo Asset
+          </Button>
         </div>
       ) : view === 'grid' ? (
         <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
@@ -119,10 +124,12 @@ export default function Assets() {
             <Card
               key={f.id}
               onClick={() => setCurrentFolderId(f.id)}
-              className="col-span-1 hover:shadow-md transition-all cursor-pointer h-full group border-border hover:border-primary/50 flex flex-col items-center justify-center p-6 gap-3 min-h-[140px]"
+              className="col-span-1 hover:shadow-md transition-all cursor-pointer h-full group flex flex-col items-center justify-center p-6 gap-4 min-h-[160px]"
             >
-              <FolderIcon className="text-primary fill-primary/20" size={32} />
-              <span className="font-semibold text-center group-hover:text-primary transition-colors text-sm">
+              <div className="w-16 h-16 rounded-xl bg-accent flex items-center justify-center text-primary shrink-0">
+                <FolderIcon size={32} className="fill-current opacity-20" />
+              </div>
+              <span className="font-semibold text-center group-hover:text-primary transition-colors text-lg">
                 {f.name}
               </span>
             </Card>
@@ -130,7 +137,7 @@ export default function Assets() {
           {filteredAssets.map((asset) => (
             <Card
               key={asset.id}
-              className="overflow-hidden hover:shadow-lg transition-all group border-border relative cursor-pointer"
+              className="overflow-hidden hover:shadow-md transition-all group relative cursor-pointer"
               onClick={() =>
                 setAction({ type: 'asset', mode: 'edit', itemId: asset.id })
               }
@@ -139,13 +146,12 @@ export default function Assets() {
                 <img
                   src={asset.url}
                   alt={asset.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px] gap-2">
+                <div className="absolute inset-0 bg-secondary/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px] gap-3">
                   <Button
                     variant="secondary"
-                    size="sm"
-                    className="pointer-events-none"
+                    className="pointer-events-none shadow-md"
                   >
                     Editar
                   </Button>
@@ -163,23 +169,23 @@ export default function Assets() {
                   </div>
                 </div>
               </div>
-              <CardContent className="p-3 bg-card">
-                <h3 className="font-medium text-sm truncate text-card-foreground">
+              <CardContent className="p-4 bg-card border-t border-border">
+                <h3 className="font-semibold text-base truncate text-foreground">
                   {asset.name}
                 </h3>
-                <div className="flex gap-1 mt-2 flex-wrap">
+                <div className="flex gap-2 mt-2 flex-wrap">
                   {asset.tags?.map((tag) => (
                     <Badge
                       key={tag}
                       variant="secondary"
-                      className="text-[10px] px-1.5 py-0 font-normal"
+                      className="bg-muted text-muted-foreground border-none font-medium"
                     >
                       {tag}
                     </Badge>
                   ))}
                   <Badge
                     variant="secondary"
-                    className="text-[10px] px-1.5 py-0 font-normal"
+                    className="bg-muted text-muted-foreground border-none font-medium"
                   >
                     {asset.category}
                   </Badge>
@@ -189,7 +195,7 @@ export default function Assets() {
           ))}
         </div>
       ) : (
-        <div className="bg-white border rounded-lg overflow-hidden">
+        <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -204,40 +210,47 @@ export default function Assets() {
                 <TableRow
                   key={f.id}
                   onClick={() => setCurrentFolderId(f.id)}
-                  className="cursor-pointer group"
+                  className="cursor-pointer group text-base"
                 >
-                  <TableCell className="w-16">
-                    <div className="w-10 h-10 flex items-center justify-center bg-muted rounded">
+                  <TableCell className="w-20">
+                    <div className="w-12 h-12 flex items-center justify-center bg-accent rounded-lg text-primary">
                       <FolderIcon
-                        className="text-primary fill-primary/20 group-hover:text-primary transition-colors"
-                        size={20}
+                        className="fill-current opacity-20 group-hover:opacity-40 transition-opacity"
+                        size={24}
                       />
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{f.name}</TableCell>
-                  <TableCell>-</TableCell>
+                  <TableCell className="font-semibold">{f.name}</TableCell>
+                  <TableCell className="text-muted-foreground">-</TableCell>
                   <TableCell></TableCell>
                 </TableRow>
               ))}
               {filteredAssets.map((a) => (
                 <TableRow
                   key={a.id}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="cursor-pointer text-base"
                   onClick={() =>
                     setAction({ type: 'asset', mode: 'edit', itemId: a.id })
                   }
                 >
-                  <TableCell className="w-16">
+                  <TableCell className="w-20">
                     <img
                       src={a.url}
                       alt={a.name}
-                      className="w-10 h-10 object-cover rounded border"
+                      className="w-12 h-12 object-cover rounded-lg border border-border"
                     />
                   </TableCell>
                   <TableCell className="font-medium">{a.name}</TableCell>
-                  <TableCell>{a.category}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="secondary"
+                      className="bg-muted text-muted-foreground border-none"
+                    >
+                      {a.category}
+                    </Badge>
+                  </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -249,7 +262,7 @@ export default function Assets() {
                           })
                         }
                       >
-                        <Pencil size={14} />
+                        <Pencil size={16} className="text-muted-foreground" />
                       </Button>
                       <MoveDialog
                         folders={moduleFolders}

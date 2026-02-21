@@ -21,8 +21,10 @@ export default function Tasks() {
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto h-full flex flex-col animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
-        <h1 className="text-3xl font-bold tracking-tight">Tarefas</h1>
-        <div className="flex items-center gap-2">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">
+          Tarefas
+        </h1>
+        <div className="flex items-center gap-3">
           <Button onClick={() => setAction({ type: 'task', mode: 'create' })}>
             <Plus size={16} className="mr-2" /> Nova Tarefa
           </Button>
@@ -30,16 +32,16 @@ export default function Tasks() {
       </div>
 
       <Tabs defaultValue="board" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="bg-transparent gap-2 h-auto p-0 mb-6 flex-wrap shrink-0 justify-start">
+        <TabsList className="bg-card gap-2 p-1.5 rounded-full flex flex-wrap shrink-0 justify-start border border-border inline-flex h-auto w-fit mb-6">
           <TabsTrigger
             value="overview"
-            className="rounded-full px-5 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-slate-200 transition-all"
+            className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
           >
             <LayoutList className="w-4 h-4 mr-2" /> Overview
           </TabsTrigger>
           <TabsTrigger
             value="board"
-            className="rounded-full px-5 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-slate-200 transition-all"
+            className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
           >
             <LayoutGrid className="w-4 h-4 mr-2" /> Quadro
           </TabsTrigger>

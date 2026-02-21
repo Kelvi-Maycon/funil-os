@@ -22,6 +22,7 @@ import {
   Lightbulb,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { format } from 'date-fns'
 import {
   ViewToggle,
   FolderBreadcrumbs,
@@ -84,10 +85,12 @@ export default function Insights() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Insights</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+            Insights
+          </h1>
           <FolderBreadcrumbs
             currentFolderId={currentFolderId}
             folders={moduleFolders}
@@ -95,7 +98,7 @@ export default function Insights() {
             rootName="Insights"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <ViewToggle view={view} onChange={setView} />
           <CreateFolderDialog onConfirm={handleCreateFolder} />
           <Button
@@ -115,19 +118,24 @@ export default function Insights() {
           placeholder="Pesquisar insights..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-white"
+          className="pl-10 bg-card"
         />
       </div>
 
       {currentFolders.length === 0 && filteredInsights.length === 0 ? (
-        <div className="py-20 text-center flex flex-col items-center">
-          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-            <Lightbulb size={32} className="text-muted-foreground" />
+        <div className="py-20 text-center flex flex-col items-center bg-card rounded-xl border border-dashed border-border shadow-sm">
+          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4 text-muted-foreground">
+            <Lightbulb size={32} />
           </div>
-          <h3 className="text-lg font-medium">Vazio</h3>
-          <p className="text-muted-foreground mb-4">
+          <h3 className="text-xl font-bold text-foreground">Vazio</h3>
+          <p className="text-base text-muted-foreground mb-6 mt-2">
             Crie um insight ou uma pasta para se organizar.
           </p>
+          <Button
+            onClick={() => setAction({ type: 'insight', mode: 'create' })}
+          >
+            <Plus size={16} className="mr-2" /> Novo Insight
+          </Button>
         </div>
       ) : view === 'grid' ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -135,10 +143,12 @@ export default function Insights() {
             <Card
               key={f.id}
               onClick={() => setCurrentFolderId(f.id)}
-              className="hover:shadow-md transition-all cursor-pointer h-full group border-border hover:border-primary/50 flex items-center p-4 gap-3 min-h-[160px]"
+              className="hover:shadow-md transition-all cursor-pointer h-full group flex items-center p-6 gap-4 min-h-[180px]"
             >
-              <FolderIcon className="text-primary fill-primary/20" size={32} />
-              <span className="font-semibold text-lg group-hover:text-primary transition-colors">
+              <div className="w-16 h-16 rounded-xl bg-accent flex items-center justify-center text-primary shrink-0">
+                <FolderIcon size={32} className="fill-current opacity-20" />
+              </div>
+              <span className="font-semibold text-xl group-hover:text-primary transition-colors">
                 {f.name}
               </span>
             </Card>
@@ -146,46 +156,46 @@ export default function Insights() {
           {filteredInsights.map((i) => (
             <Card
               key={i.id}
-              className="relative hover:shadow-md transition-shadow group border-border flex flex-col cursor-pointer"
+              className="relative hover:shadow-md transition-shadow group flex flex-col cursor-pointer"
               onClick={() =>
                 setAction({ type: 'insight', mode: 'edit', itemId: i.id })
               }
             >
               {i.isPinned && (
                 <Pin
-                  className="absolute top-4 right-4 text-primary fill-primary z-10"
-                  size={16}
+                  className="absolute top-6 right-6 text-primary fill-primary z-10 drop-shadow-sm"
+                  size={20}
                   onClick={(e) => togglePin(e, i.id)}
                 />
               )}
               {!i.isPinned && (
                 <Pin
-                  className="absolute top-4 right-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  size={16}
+                  className="absolute top-6 right-6 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  size={20}
                   onClick={(e) => togglePin(e, i.id)}
                 />
               )}
-              <CardHeader className="pb-2 pr-12">
-                <div className="flex flex-col gap-2 items-start">
+              <CardHeader className="pb-2 pr-16 shrink-0">
+                <div className="flex flex-col gap-3 items-start">
                   <Badge
                     variant="secondary"
-                    className="bg-primary/10 text-primary hover:bg-primary/20 border-none"
+                    className="bg-accent text-accent-foreground border-none"
                   >
                     {i.type}
                   </Badge>
-                  <CardTitle className="text-lg leading-snug">
+                  <CardTitle className="text-xl leading-snug">
                     {i.title}
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 flex flex-col">
-                <p className="text-muted-foreground text-sm line-clamp-4 leading-relaxed flex-1">
+              <CardContent className="flex-1 flex flex-col pt-2">
+                <p className="text-muted-foreground text-base line-clamp-4 leading-relaxed flex-1">
                   {i.content}
                 </p>
-                <div className="mt-4 pt-4 border-t flex justify-between items-center">
+                <div className="mt-6 pt-4 border-t border-border flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">
-                      Há 2 dias
+                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                      {format(new Date(i.createdAt), 'dd MMM yyyy')}
                     </span>
                     <div
                       onClick={(e) => {
@@ -200,7 +210,10 @@ export default function Insights() {
                       />
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge
+                    variant="outline"
+                    className="bg-muted text-muted-foreground border-none font-medium"
+                  >
                     {i.status}
                   </Badge>
                 </div>
@@ -209,7 +222,7 @@ export default function Insights() {
           ))}
         </div>
       ) : (
-        <div className="bg-white border rounded-lg overflow-hidden">
+        <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -224,13 +237,15 @@ export default function Insights() {
                 <TableRow
                   key={f.id}
                   onClick={() => setCurrentFolderId(f.id)}
-                  className="cursor-pointer group"
+                  className="cursor-pointer group text-base"
                 >
-                  <TableCell className="font-medium flex items-center gap-2 py-4">
-                    <FolderIcon
-                      className="text-primary fill-primary/20 group-hover:text-primary transition-colors"
-                      size={16}
-                    />
+                  <TableCell className="font-semibold flex items-center gap-3 py-4">
+                    <div className="w-10 h-10 flex items-center justify-center bg-accent rounded-lg text-primary">
+                      <FolderIcon
+                        className="fill-current opacity-20"
+                        size={20}
+                      />
+                    </div>
                     {f.name}
                   </TableCell>
                   <TableCell>-</TableCell>
@@ -241,29 +256,34 @@ export default function Insights() {
               {filteredInsights.map((i) => (
                 <TableRow
                   key={i.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer text-base"
                   onClick={() =>
                     setAction({ type: 'insight', mode: 'edit', itemId: i.id })
                   }
                 >
                   <TableCell className="font-medium py-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       {i.title}
                       {i.isPinned && (
-                        <Pin className="text-primary fill-primary" size={14} />
+                        <Pin className="text-primary fill-primary" size={16} />
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="secondary"
-                      className="bg-primary/10 text-primary border-none"
+                      className="bg-accent text-accent-foreground border-none"
                     >
                       {i.type}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{i.status}</Badge>
+                    <Badge
+                      variant="outline"
+                      className="bg-muted text-muted-foreground border-none font-medium"
+                    >
+                      {i.status}
+                    </Badge>
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <MoveDialog

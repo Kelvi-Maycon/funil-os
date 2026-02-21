@@ -26,7 +26,18 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        xs: ['10px', { lineHeight: '14px', fontWeight: '600' }],
+        sm: ['11px', { lineHeight: '16px', fontWeight: '500' }],
+        base: ['13px', { lineHeight: '20px', fontWeight: '400' }],
+        md: ['14px', { lineHeight: '20px', fontWeight: '500' }],
+        lg: ['16px', { lineHeight: '24px', fontWeight: '600' }],
+        xl: ['20px', { lineHeight: '28px', fontWeight: '600' }],
+        '2xl': ['24px', { lineHeight: '32px', fontWeight: '700' }],
+        '3xl': ['28px', { lineHeight: '36px', fontWeight: '700' }],
+        '4xl': ['32px', { lineHeight: '40px', fontWeight: '700' }],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -37,6 +48,7 @@ export default {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          subtle: 'rgba(244, 81, 11, 0.08)',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -72,18 +84,34 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
-        chart: {
-          1: 'hsl(var(--chart-1))',
-          2: 'hsl(var(--chart-2))',
-          3: 'hsl(var(--chart-3))',
-          4: 'hsl(var(--chart-4))',
-          5: 'hsl(var(--chart-5))',
+        success: {
+          DEFAULT: '#22C55E',
+          foreground: '#15803D',
+          bg: '#ECFDF5',
+        },
+        warning: {
+          DEFAULT: '#F59E0B',
+          foreground: '#B45309',
+          bg: '#FFFBEB',
+        },
+        danger: {
+          DEFAULT: '#EF4444',
+          foreground: '#B91C1C',
+          bg: '#FEF2F2',
+        },
+        info: {
+          DEFAULT: '#3B82F6',
+          foreground: '#1D4ED8',
+          bg: '#EFF6FF',
         },
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        sm: '4px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        '2xl': '20px',
+        full: '9999px',
       },
     },
   },

@@ -102,24 +102,28 @@ export default function ProjectDetail() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#f8fafc] overflow-hidden animate-fade-in">
-      <div className="flex flex-col gap-6 p-6 md:p-8 bg-white border-b border-border z-10 relative shadow-sm shrink-0">
+    <div className="flex flex-col h-full bg-background overflow-hidden animate-fade-in">
+      <div className="flex flex-col gap-6 p-6 md:p-8 bg-card border-b border-border z-10 relative shrink-0">
         <div className="flex items-center justify-between">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link to="/projetos">Projetos</Link>
+                  <Link to="/projetos" className="text-md">
+                    Projetos
+                  </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{project.name}</BreadcrumbPage>
+                <BreadcrumbPage className="font-semibold text-md">
+                  {project.name}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="sm"
@@ -131,7 +135,7 @@ export default function ProjectDetail() {
                 })
               }
             >
-              <CheckSquare size={14} className="mr-1.5" /> Tarefa
+              <CheckSquare size={14} className="mr-2" /> Tarefa
             </Button>
             <Button
               variant="outline"
@@ -144,7 +148,7 @@ export default function ProjectDetail() {
                 })
               }
             >
-              <FileText size={14} className="mr-1.5" /> Doc
+              <FileText size={14} className="mr-2" /> Doc
             </Button>
             <Button
               size="sm"
@@ -156,7 +160,7 @@ export default function ProjectDetail() {
                 })
               }
             >
-              <Plus size={14} className="mr-1.5" /> Funil
+              <Plus size={14} className="mr-2" /> Funil
             </Button>
           </div>
         </div>
@@ -164,53 +168,55 @@ export default function ProjectDetail() {
         <div className="flex flex-col lg:flex-row justify-between gap-6 items-start lg:items-center">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground">
                 {project.name}
               </h1>
               <Badge
-                variant={project.status === 'Ativo' ? 'default' : 'secondary'}
+                variant="outline"
                 className={
                   project.status === 'Ativo'
-                    ? 'bg-green-500 hover:bg-green-600'
-                    : ''
+                    ? 'bg-success-bg text-success-foreground border-none'
+                    : 'bg-muted text-muted-foreground border-none'
                 }
               >
                 {project.status}
               </Badge>
             </div>
-            <p className="text-slate-500 text-sm">{project.description}</p>
+            <p className="text-muted-foreground text-base">
+              {project.description}
+            </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <div className="flex flex-col px-4 border-r border-slate-200 last:border-0">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-6 bg-background p-4 rounded-2xl border border-border">
+            <div className="flex flex-col px-4 border-r border-border last:border-0">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                 Funis
               </span>
-              <span className="text-lg font-bold text-slate-800 leading-none">
+              <span className="text-2xl font-bold text-foreground leading-none">
                 {projectFunnels.length}
               </span>
             </div>
-            <div className="flex flex-col px-4 border-r border-slate-200 last:border-0">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            <div className="flex flex-col px-4 border-r border-border last:border-0">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                 Tasks
               </span>
-              <span className="text-lg font-bold text-slate-800 leading-none">
+              <span className="text-2xl font-bold text-foreground leading-none">
                 {completedTasks}/{totalTasks}
               </span>
             </div>
-            <div className="flex flex-col px-4 border-r border-slate-200 last:border-0">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            <div className="flex flex-col px-4 border-r border-border last:border-0">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                 Docs
               </span>
-              <span className="text-lg font-bold text-slate-800 leading-none">
+              <span className="text-2xl font-bold text-foreground leading-none">
                 {projectDocs.length}
               </span>
             </div>
-            <div className="flex flex-col px-4 border-r border-slate-200 last:border-0">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            <div className="flex flex-col px-4 border-r border-border last:border-0">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                 Assets
               </span>
-              <span className="text-lg font-bold text-slate-800 leading-none">
+              <span className="text-2xl font-bold text-foreground leading-none">
                 {projectAssets.length + projectSwipes.length}
               </span>
             </div>
@@ -219,42 +225,42 @@ export default function ProjectDetail() {
       </div>
 
       <Tabs defaultValue="funnels" className="flex-1 flex flex-col min-h-0">
-        <div className="px-6 md:px-8 bg-white border-b border-border shrink-0 z-0">
-          <TabsList className="bg-transparent gap-6 h-auto p-0 flex-wrap justify-start border-none">
+        <div className="px-6 md:px-8 py-4 bg-card border-b border-border shrink-0 z-0">
+          <TabsList className="bg-background gap-2 p-1.5 rounded-full flex flex-wrap justify-start border border-border inline-flex h-auto">
             <TabsTrigger
               value="funnels"
-              className="rounded-none px-0 py-3.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium"
+              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
             >
               <Network size={16} className="mr-2" /> Funnels
             </TabsTrigger>
             <TabsTrigger
               value="tasks"
-              className="rounded-none px-0 py-3.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium"
+              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
             >
               <CheckSquare size={16} className="mr-2" /> Tasks
             </TabsTrigger>
             <TabsTrigger
               value="documents"
-              className="rounded-none px-0 py-3.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium"
+              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
             >
               <FileText size={16} className="mr-2" /> Documents
             </TabsTrigger>
             <TabsTrigger
               value="assets"
-              className="rounded-none px-0 py-3.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium"
+              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
             >
               <ImageIcon size={16} className="mr-2" /> Assets & Swipe
             </TabsTrigger>
             <TabsTrigger
               value="insights"
-              className="rounded-none px-0 py-3.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium"
+              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
             >
               <Lightbulb size={16} className="mr-2" /> Insights
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8 bg-[#f8fafc] relative flex flex-col">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8 bg-background relative flex flex-col">
           <TabsContent
             value="funnels"
             className="flex-1 m-0 data-[state=active]:flex flex-col border-none outline-none"
@@ -262,7 +268,7 @@ export default function ProjectDetail() {
             {!selectedFunnelId ? (
               <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
                 <div className="flex justify-between items-center mb-6 shrink-0">
-                  <h3 className="text-lg font-semibold text-slate-800">
+                  <h3 className="text-2xl font-bold text-foreground">
                     Funis do Projeto
                   </h3>
                   <Button
@@ -278,15 +284,15 @@ export default function ProjectDetail() {
                   </Button>
                 </div>
                 {projectFunnels.length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {projectFunnels.map((f) => (
                       <Card
                         key={f.id}
-                        className="cursor-pointer hover:shadow-md transition-shadow group border-border hover:border-primary/30 overflow-hidden flex flex-col rounded-xl"
+                        className="cursor-pointer hover:shadow-md transition-shadow group overflow-hidden flex flex-col"
                         onClick={() => setSelectedFunnelId(f.id)}
                       >
                         <div
-                          className="h-32 bg-slate-50 border-b border-border relative shrink-0"
+                          className="h-36 bg-card border-b border-border relative shrink-0"
                           style={{
                             backgroundImage:
                               'radial-gradient(hsl(var(--border)) 1px, transparent 0)',
@@ -295,30 +301,33 @@ export default function ProjectDetail() {
                         >
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/40 backdrop-blur-[2px] z-10">
                             <Button
-                              variant="secondary"
-                              className="bg-white shadow-sm hover:bg-slate-50 text-primary rounded-xl pointer-events-none"
+                              variant="dark"
+                              className="pointer-events-none"
                             >
                               Abrir Canvas
                             </Button>
                           </div>
                           {f.nodes.length > 0 && (
                             <div className="absolute inset-0 flex items-center justify-center opacity-30 scale-75">
-                              <Network size={64} className="text-slate-500" />
+                              <Network
+                                size={64}
+                                className="text-muted-foreground"
+                              />
                             </div>
                           )}
                         </div>
-                        <CardHeader className="p-4 pb-2">
-                          <CardTitle className="text-base font-semibold text-slate-800 line-clamp-1">
+                        <CardHeader className="p-6 pb-2">
+                          <CardTitle className="line-clamp-1 text-xl">
                             {f.name}
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0 flex justify-between items-center flex-1">
-                          <span className="text-xs text-slate-500">
+                        <CardContent className="p-6 pt-2 flex justify-between items-center flex-1">
+                          <span className="text-base text-muted-foreground">
                             {f.nodes.length} blocos
                           </span>
                           <Badge
                             variant="outline"
-                            className="bg-slate-50 text-slate-600 border-slate-200 font-normal"
+                            className="bg-muted text-muted-foreground border-none font-medium"
                           >
                             {f.status}
                           </Badge>
@@ -327,14 +336,14 @@ export default function ProjectDetail() {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-white p-12 min-h-[400px]">
-                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
+                  <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl bg-card p-12 min-h-[400px]">
+                    <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mb-4 text-primary">
                       <Network size={24} />
                     </div>
-                    <h3 className="text-lg font-medium text-slate-900">
+                    <h3 className="text-xl font-bold text-foreground">
                       Nenhum funil encontrado
                     </h3>
-                    <p className="text-slate-500 mt-1 mb-6 text-center max-w-sm">
+                    <p className="text-muted-foreground mt-2 mb-6 text-center max-w-sm text-base">
                       Comece mapeando a jornada do seu cliente. Crie o primeiro
                       funil para este projeto.
                     </p>
@@ -353,7 +362,7 @@ export default function ProjectDetail() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 relative rounded-xl border border-border overflow-hidden bg-[#f8fafc] shadow-sm flex flex-col min-h-[600px] -mx-2 sm:mx-0">
+              <div className="flex-1 relative rounded-xl border border-border overflow-hidden bg-background shadow-sm flex flex-col min-h-[600px] -mx-2 sm:mx-0">
                 <CanvasBoard
                   funnel={
                     projectFunnels.find((f) => f.id === selectedFunnelId)!
@@ -372,9 +381,7 @@ export default function ProjectDetail() {
           >
             <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
               <div className="flex justify-between items-center mb-6 shrink-0">
-                <h3 className="text-lg font-semibold text-slate-800">
-                  Tarefas
-                </h3>
+                <h3 className="text-2xl font-bold text-foreground">Tarefas</h3>
                 <Button
                   onClick={() =>
                     setAction({
@@ -396,14 +403,14 @@ export default function ProjectDetail() {
                   />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-white p-12 min-h-[400px]">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
+                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl bg-card p-12 min-h-[400px]">
+                  <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mb-4 text-primary">
                     <CheckSquare size={24} />
                   </div>
-                  <h3 className="text-lg font-medium text-slate-900">
+                  <h3 className="text-xl font-bold text-foreground">
                     Nenhuma tarefa
                   </h3>
-                  <p className="text-slate-500 mt-1 mb-6 text-center max-w-sm">
+                  <p className="text-muted-foreground mt-2 mb-6 text-center max-w-sm text-base">
                     Organize as entregas do projeto criando tarefas para sua
                     equipe.
                   </p>
@@ -429,7 +436,7 @@ export default function ProjectDetail() {
           >
             <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
               <div className="flex justify-between items-center mb-6 shrink-0">
-                <h3 className="text-lg font-semibold text-slate-800">
+                <h3 className="text-2xl font-bold text-foreground">
                   Documentos
                 </h3>
                 <Button
@@ -445,26 +452,26 @@ export default function ProjectDetail() {
                 </Button>
               </div>
               {projectDocs.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {projectDocs.map((d) => (
                     <Card
                       key={d.id}
-                      className="cursor-pointer hover:shadow-md transition-shadow group border-border hover:border-primary/40 flex flex-col rounded-xl"
+                      className="cursor-pointer hover:shadow-md transition-shadow group flex flex-col"
                       onClick={() => navigate('/documentos')}
                     >
-                      <CardHeader className="p-5 pb-3 flex flex-row items-start justify-between space-y-0 shrink-0">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-50 mb-2 group-hover:scale-110 transition-transform">
-                          <FileText size={20} className="text-blue-500" />
+                      <CardHeader className="p-6 pb-4 flex flex-row items-start justify-between space-y-0 shrink-0">
+                        <div className="w-12 h-12 rounded-lg bg-info-bg flex items-center justify-center text-info mb-2 group-hover:scale-105 transition-transform">
+                          <FileText size={24} />
                         </div>
-                        <span className="text-[11px] text-slate-400 font-medium">
+                        <span className="text-sm text-muted-foreground font-medium">
                           {format(new Date(d.updatedAt), 'dd/MM/yyyy')}
                         </span>
                       </CardHeader>
-                      <CardContent className="p-5 pt-0 flex-1 flex flex-col">
-                        <CardTitle className="text-base font-semibold text-slate-800 line-clamp-1 mb-2">
+                      <CardContent className="p-6 pt-0 flex-1 flex flex-col">
+                        <CardTitle className="text-xl line-clamp-1 mb-2">
                           {d.title}
                         </CardTitle>
-                        <p className="text-sm text-slate-500 line-clamp-2">
+                        <p className="text-base text-muted-foreground line-clamp-2">
                           {d.content.replace(/<[^>]*>?/gm, '') ||
                             'Documento vazio'}
                         </p>
@@ -473,14 +480,14 @@ export default function ProjectDetail() {
                   ))}
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-white p-12 min-h-[400px]">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
+                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl bg-card p-12 min-h-[400px]">
+                  <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mb-4 text-primary">
                     <FileText size={24} />
                   </div>
-                  <h3 className="text-lg font-medium text-slate-900">
+                  <h3 className="text-xl font-bold text-foreground">
                     Nenhum documento
                   </h3>
-                  <p className="text-slate-500 mt-1 mb-6 text-center max-w-sm">
+                  <p className="text-muted-foreground mt-2 mb-6 text-center max-w-sm text-base">
                     Crie briefings, roteiros e textos centralizados neste
                     projeto.
                   </p>
@@ -506,10 +513,10 @@ export default function ProjectDetail() {
           >
             <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
               <div className="flex justify-between items-center mb-6 shrink-0">
-                <h3 className="text-lg font-semibold text-slate-800">
+                <h3 className="text-2xl font-bold text-foreground">
                   Assets & Swipe
                 </h3>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Button
                     variant="outline"
                     onClick={() =>
@@ -539,14 +546,14 @@ export default function ProjectDetail() {
                 <div className="space-y-8">
                   {projectAssets.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                         <ImageIcon size={16} /> Assets do Projeto
                       </h4>
-                      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                      <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                         {projectAssets.map((asset) => (
                           <Card
                             key={asset.id}
-                            className="overflow-hidden hover:shadow-md transition-all group border-border cursor-pointer rounded-xl"
+                            className="overflow-hidden hover:shadow-md transition-all group cursor-pointer rounded-xl"
                             onClick={() =>
                               setAction({
                                 type: 'asset',
@@ -555,30 +562,29 @@ export default function ProjectDetail() {
                               })
                             }
                           >
-                            <div className="aspect-square bg-slate-100 relative">
+                            <div className="aspect-square bg-muted relative">
                               <img
                                 src={asset.url}
                                 alt={asset.name}
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                               />
-                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                              <div className="absolute inset-0 bg-secondary/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
                                 <Button
                                   variant="secondary"
-                                  size="sm"
-                                  className="bg-white/90 hover:bg-white text-slate-900 pointer-events-none"
+                                  className="pointer-events-none"
                                 >
                                   Editar
                                 </Button>
                               </div>
                             </div>
-                            <CardContent className="p-3 bg-white border-t border-border">
-                              <h3 className="font-medium text-sm truncate text-slate-800">
+                            <CardContent className="p-4 bg-card border-t border-border">
+                              <h3 className="font-semibold text-md truncate text-foreground">
                                 {asset.name}
                               </h3>
-                              <div className="flex gap-1 mt-1.5 flex-wrap">
+                              <div className="flex gap-1.5 mt-2 flex-wrap">
                                 <Badge
                                   variant="secondary"
-                                  className="text-[10px] px-1.5 py-0 font-normal"
+                                  className="bg-muted text-muted-foreground border-none"
                                 >
                                   {asset.category}
                                 </Badge>
@@ -592,10 +598,10 @@ export default function ProjectDetail() {
 
                   {projectSwipes.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                         <Bookmark size={16} /> Swipe File
                       </h4>
-                      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                      <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                         {projectSwipes.map((s) => (
                           <div
                             key={s.id}
@@ -614,10 +620,10 @@ export default function ProjectDetail() {
                               className="w-full aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end pointer-events-none">
-                              <h3 className="text-white font-medium text-sm line-clamp-1">
+                              <h3 className="text-white font-semibold text-md line-clamp-1">
                                 {s.title}
                               </h3>
-                              <p className="text-white/80 text-xs">
+                              <p className="text-white/80 text-sm">
                                 {s.category}
                               </p>
                             </div>
@@ -628,14 +634,14 @@ export default function ProjectDetail() {
                   )}
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-white p-12 min-h-[400px]">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
+                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl bg-card p-12 min-h-[400px]">
+                  <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mb-4 text-primary">
                     <ImageIcon size={24} />
                   </div>
-                  <h3 className="text-lg font-medium text-slate-900">
+                  <h3 className="text-xl font-bold text-foreground">
                     Sem assets ou inspirações
                   </h3>
-                  <p className="text-slate-500 mt-1 mb-6 text-center max-w-sm">
+                  <p className="text-muted-foreground mt-2 mb-6 text-center max-w-sm text-base">
                     Faça upload de criativos, referências visuais e assets para
                     usar no projeto.
                   </p>
@@ -675,9 +681,7 @@ export default function ProjectDetail() {
           >
             <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
               <div className="flex justify-between items-center mb-6 shrink-0">
-                <h3 className="text-lg font-semibold text-slate-800">
-                  Insights
-                </h3>
+                <h3 className="text-2xl font-bold text-foreground">Insights</h3>
                 <Button
                   onClick={() =>
                     setAction({
@@ -691,11 +695,11 @@ export default function ProjectDetail() {
                 </Button>
               </div>
               {projectInsights.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {projectInsights.map((i) => (
                     <Card
                       key={i.id}
-                      className="relative hover:shadow-md transition-shadow group border-border hover:border-primary/40 flex flex-col cursor-pointer rounded-xl"
+                      className="relative hover:shadow-md transition-shadow group flex flex-col cursor-pointer"
                       onClick={() =>
                         setAction({
                           type: 'insight',
@@ -704,30 +708,30 @@ export default function ProjectDetail() {
                         })
                       }
                     >
-                      <CardHeader className="pb-2 shrink-0">
-                        <div className="flex justify-between items-start mb-2">
+                      <CardHeader className="p-6 pb-2 shrink-0">
+                        <div className="flex justify-between items-start mb-3">
                           <Badge
                             variant="secondary"
-                            className="bg-primary/10 text-primary border-none"
+                            className="bg-accent text-accent-foreground border-none"
                           >
                             {i.type}
                           </Badge>
-                          <span className="text-[10px] text-slate-400 font-medium">
+                          <span className="text-xs text-muted-foreground font-medium">
                             {format(new Date(i.createdAt), 'dd/MM/yyyy')}
                           </span>
                         </div>
-                        <CardTitle className="text-base leading-snug">
+                        <CardTitle className="text-xl leading-snug">
                           {i.title}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="flex-1 flex flex-col">
-                        <p className="text-muted-foreground text-sm line-clamp-3 leading-relaxed flex-1">
+                      <CardContent className="p-6 pt-2 flex-1 flex flex-col">
+                        <p className="text-base text-muted-foreground line-clamp-3 leading-relaxed flex-1">
                           {i.content}
                         </p>
-                        <div className="mt-4 pt-4 border-t border-border flex justify-end">
+                        <div className="mt-6 pt-4 border-t border-border flex justify-end">
                           <Badge
                             variant="outline"
-                            className="text-[10px] font-normal text-slate-500"
+                            className="bg-muted text-muted-foreground border-none font-medium"
                           >
                             {i.status}
                           </Badge>
@@ -737,14 +741,14 @@ export default function ProjectDetail() {
                   ))}
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-white p-12 min-h-[400px]">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary">
+                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl bg-card p-12 min-h-[400px]">
+                  <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mb-4 text-primary">
                     <Lightbulb size={24} />
                   </div>
-                  <h3 className="text-lg font-medium text-slate-900">
+                  <h3 className="text-xl font-bold text-foreground">
                     Nenhum insight documentado
                   </h3>
-                  <p className="text-slate-500 mt-1 mb-6 text-center max-w-sm">
+                  <p className="text-muted-foreground mt-2 mb-6 text-center max-w-sm text-base">
                     Registre ideias, hipóteses de teste e aprendizados sobre
                     este projeto.
                   </p>

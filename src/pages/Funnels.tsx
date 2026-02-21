@@ -216,27 +216,29 @@ export default function Funnels() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Canvas de Funis</h1>
-        <div className="flex items-center gap-2">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">
+          Canvas de Funis
+        </h1>
+        <div className="flex items-center gap-3">
           <ToggleGroup
             type="single"
             value={viewMode}
             onValueChange={(v) => v && setViewMode(v as 'grid' | 'list')}
-            className="bg-card border rounded-md p-0.5 shadow-sm"
+            className="bg-card border border-border p-1 rounded-full shadow-sm"
           >
             <ToggleGroupItem
               value="grid"
               aria-label="Visualização em Grade"
-              className="data-[state=on]:bg-muted"
+              className="rounded-full data-[state=on]:bg-secondary data-[state=on]:text-secondary-foreground text-muted-foreground hover:text-foreground"
             >
               <LayoutGrid size={16} />
             </ToggleGroupItem>
             <ToggleGroupItem
               value="list"
               aria-label="Visualização em Lista"
-              className="data-[state=on]:bg-muted"
+              className="rounded-full data-[state=on]:bg-secondary data-[state=on]:text-secondary-foreground text-muted-foreground hover:text-foreground"
             >
               <List size={16} />
             </ToggleGroupItem>
@@ -250,15 +252,15 @@ export default function Funnels() {
         </div>
       </div>
 
-      <Breadcrumb className="bg-card px-4 py-2 border rounded-md shadow-sm">
+      <Breadcrumb className="bg-card px-5 py-3 border border-border rounded-xl shadow-sm">
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
               <button
                 onClick={() => setCurrentFolderId(null)}
-                className="flex items-center gap-1 cursor-pointer"
+                className="flex items-center gap-1 cursor-pointer font-medium"
               >
-                <Home size={14} /> Home
+                <Home size={16} /> Home
               </button>
             </BreadcrumbLink>
           </BreadcrumbItem>
@@ -267,12 +269,14 @@ export default function Funnels() {
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 {idx === breadcrumbs.length - 1 ? (
-                  <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
+                  <BreadcrumbPage className="font-semibold">
+                    {crumb.name}
+                  </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
                     <button
                       onClick={() => setCurrentFolderId(crumb.id)}
-                      className="cursor-pointer"
+                      className="cursor-pointer font-medium"
                     >
                       {crumb.name}
                     </button>
@@ -309,7 +313,7 @@ export default function Funnels() {
           <DialogHeader>
             <DialogTitle>Nova Pasta</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreateFolder} className="space-y-4 pt-4">
+          <form onSubmit={handleCreateFolder} className="space-y-4 pt-6">
             <Input
               placeholder="Nome da pasta"
               value={newFolderName}
@@ -331,7 +335,7 @@ export default function Funnels() {
           <DialogHeader>
             <DialogTitle>Renomear Pasta</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleRenameFolder} className="space-y-4 pt-4">
+          <form onSubmit={handleRenameFolder} className="space-y-4 pt-6">
             <Input
               placeholder="Novo nome"
               value={renameItem?.name || ''}
@@ -358,7 +362,7 @@ export default function Funnels() {
               Mover {moveItem?.type === 'folder' ? 'Pasta' : 'Funil'}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleMove} className="space-y-4 pt-4">
+          <form onSubmit={handleMove} className="space-y-4 pt-6">
             <Select
               value={targetFolderId || 'root'}
               onValueChange={setTargetFolderId}
