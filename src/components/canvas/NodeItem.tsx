@@ -14,7 +14,6 @@ import {
   FileText,
   Settings,
   Trash2,
-  Check,
   Zap,
   MessageSquare,
   Clock,
@@ -161,6 +160,7 @@ export default function NodeItem({
   }
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return
     const target = e.target as HTMLElement
     if (
       isPanMode ||
@@ -214,12 +214,15 @@ export default function NodeItem({
       onMoveEnd(dx, dy)
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
     }
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
   }
 
   const handleResizeStart = (e: React.PointerEvent, corner: string) => {
+    if (e.button !== 0) return
     e.stopPropagation()
     const target = e.target as HTMLElement
     target.setPointerCapture(e.pointerId)
@@ -318,9 +321,11 @@ export default function NodeItem({
       onResizeEnd?.(newX, newY, newW, newH)
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
     }
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
   }
 
   const handleDrop = (e: React.DragEvent) => {

@@ -107,6 +107,7 @@ export default function CanvasBoard({
 
   const [transform, setTransform] = useState({ x: 400, y: 150, scale: 1 })
   const [isPanning, setIsPanning] = useState(false)
+  const [isSpacePressed, setIsSpacePressed] = useState(false)
   const [activeTool, setActiveTool] = useState<
     'Select' | 'Pan' | 'Square' | 'Diamond' | 'Circle'
   >('Select')
@@ -203,6 +204,11 @@ export default function CanvasBoard({
         (e.target as HTMLElement).isContentEditable
       )
         return
+      if (e.code === 'Space') {
+        e.preventDefault()
+        setIsSpacePressed(true)
+        return
+      }
       switch (e.key.toLowerCase()) {
         case '1':
         case 'v':
@@ -232,8 +238,17 @@ export default function CanvasBoard({
           break
       }
     }
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpacePressed(false)
+      }
+    }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
   }, [handleDeleteSelected, handleGroupSelected])
 
   useEffect(() => {
@@ -314,7 +329,18 @@ export default function CanvasBoard({
     const rect = boardRef.current?.getBoundingClientRect()
     if (!rect) return
 
-    if (isCanvasBg) {
+    const isMiddleClick = e.button === 1
+    const isSpaceRightClick = isSpacePressed && e.button === 2
+
+    if (activeTool === 'Pan' || isMiddleClick || isSpaceRightClick) {
+      setIsPanning(true)
+      lastPan.current = { x: e.clientX, y: e.clientY }
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+      document.body.style.userSelect = 'none'
+      return
+    }
+
+    if (isCanvasBg && e.button === 0) {
       if (['Square', 'Diamond', 'Circle'].includes(activeTool)) {
         let x = (e.clientX - rect.left - transform.x) / transform.scale
         let y = (e.clientY - rect.top - transform.y) / transform.scale
@@ -342,13 +368,6 @@ export default function CanvasBoard({
         setSelectionBox({ startX: x, startY: y, currentX: x, currentY: y })
         ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
       }
-    }
-
-    if (activeTool === 'Pan' || e.button === 1) {
-      setIsPanning(true)
-      lastPan.current = { x: e.clientX, y: e.clientY }
-      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-      document.body.style.userSelect = 'none'
     }
   }
 
@@ -500,6 +519,7 @@ export default function CanvasBoard({
   }
 
   const handleEdgeDragStart = (nodeId: string, e: React.PointerEvent) => {
+    if (e.button !== 0) return
     const rect = boardRef.current?.getBoundingClientRect()
     if (!rect) return
     const getCoords = (cx: number, cy: number) => ({
@@ -539,9 +559,11 @@ export default function CanvasBoard({
       setDrawingEdge(null)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
     }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
   }
 
   const handleAddChild = (parentId: string) => {
@@ -1421,21 +1443,23 @@ export default function CanvasBoard({
         ref={boardRef}
         className={cn(
           'flex-1 relative canvas-container overflow-hidden',
-          activeTool === 'Pan'
-            ? isPanning
-              ? 'cursor-grabbing'
-              : 'cursor-grab'
-            : activeTool !== 'Select'
-              ? 'cursor-crosshair'
-              : '',
+          isPanning
+            ? 'cursor-grabbing'
+            : isSpacePressed || activeTool === 'Pan'
+              ? 'cursor-grab'
+              : activeTool !== 'Select'
+                ? 'cursor-crosshair'
+                : '',
         )}
         style={{
           backgroundPosition: `${transform.x}px ${transform.y}px`,
           backgroundSize: `${28 * transform.scale}px ${28 * transform.scale}px`,
         }}
+        onContextMenu={(e) => e.preventDefault()}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         onPointerLeave={handlePointerUp}
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
