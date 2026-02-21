@@ -1,14 +1,19 @@
-/* Main App Component - Handles routing (using react-router-dom), query client and other providers - use this file to add all routes */
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import Layout from './components/Layout'
 import Index from './pages/Index'
 import NotFound from './pages/NotFound'
-import Layout from './components/Layout'
-
-// ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
-// AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
+import Projects from './pages/Projects'
+import ProjectDetail from './pages/ProjectDetail'
+import Funnels from './pages/Funnels'
+import Canvas from './pages/Canvas'
+import Tasks from './pages/Tasks'
+import Documents from './pages/Documents'
+import Assets from './pages/Assets'
+import Insights from './pages/Insights'
+import SwipeFile from './pages/SwipeFile'
 
 const App = () => (
   <BrowserRouter
@@ -20,7 +25,15 @@ const App = () => (
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
+          <Route path="/projetos" element={<Projects />} />
+          <Route path="/projetos/:id" element={<ProjectDetail />} />
+          <Route path="/canvas" element={<Funnels />} />
+          <Route path="/canvas/:id" element={<Canvas />} />
+          <Route path="/tarefas" element={<Tasks />} />
+          <Route path="/documentos" element={<Documents />} />
+          <Route path="/assets" element={<Assets />} />
+          <Route path="/insights" element={<Insights />} />
+          <Route path="/swipe-file" element={<SwipeFile />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
