@@ -409,7 +409,9 @@ export default function RichTextEditor({
           className={cn(
             'flex flex-col flex-1 mx-auto w-full',
             !isResizing && 'transition-all duration-300',
-            editingCanvasId ? 'p-6 lg:p-8 max-w-4xl' : 'p-8 max-w-5xl',
+            editingCanvasId
+              ? 'p-6 lg:p-8 max-w-[1600px]'
+              : 'p-8 max-w-[1600px]',
           )}
         >
           <div className="flex items-center gap-4 mb-6 border-b pb-4 sticky top-0 bg-background/95 backdrop-blur z-10 shrink-0">

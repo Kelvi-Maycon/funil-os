@@ -144,7 +144,7 @@ export default function Assets() {
         </div>
       )}
 
-      <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6 flex-1">
+      <div className="p-6 md:p-8 max-w-[1600px] mx-auto w-full space-y-6 flex-1">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-4xl font-bold tracking-tight text-foreground">

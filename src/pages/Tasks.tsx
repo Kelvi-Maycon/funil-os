@@ -20,7 +20,7 @@ export default function Tasks() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto h-full flex flex-col animate-fade-in">
+    <div className="p-6 md:p-8 max-w-[1600px] w-full mx-auto h-full flex flex-col animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
         <h1 className="text-4xl font-bold tracking-tight text-foreground">
           Tarefas

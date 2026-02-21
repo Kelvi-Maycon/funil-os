@@ -104,121 +104,123 @@ export default function ProjectDetail() {
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden animate-fade-in">
       <div className="flex flex-col gap-6 p-6 md:p-8 bg-card border-b border-border z-10 relative shrink-0">
-        <div className="flex items-center justify-between">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link to="/projetos" className="text-md">
-                    Projetos
-                  </Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="font-semibold text-md">
-                  {project.name}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+        <div className="max-w-[1600px] mx-auto w-full flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/projetos" className="text-md">
+                      Projetos
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="font-semibold text-md">
+                    {project.name}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setAction({
-                  type: 'task',
-                  mode: 'create',
-                  defaultProjectId: id,
-                })
-              }
-            >
-              <CheckSquare size={14} className="mr-2" /> Tarefa
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setAction({
-                  type: 'document',
-                  mode: 'create',
-                  defaultProjectId: id,
-                })
-              }
-            >
-              <FileText size={14} className="mr-2" /> Doc
-            </Button>
-            <Button
-              size="sm"
-              onClick={() =>
-                setAction({
-                  type: 'canvas',
-                  mode: 'create',
-                  defaultProjectId: id,
-                })
-              }
-            >
-              <Plus size={14} className="mr-2" /> Funil
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col lg:flex-row justify-between gap-6 items-start lg:items-center">
-          <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-bold tracking-tight text-foreground">
-                {project.name}
-              </h1>
-              <Badge
+              <Button
                 variant="outline"
-                className={
-                  project.status === 'Ativo'
-                    ? 'bg-success-bg text-success-foreground border-none'
-                    : 'bg-muted text-muted-foreground border-none'
+                size="sm"
+                onClick={() =>
+                  setAction({
+                    type: 'task',
+                    mode: 'create',
+                    defaultProjectId: id,
+                  })
                 }
               >
-                {project.status}
-              </Badge>
+                <CheckSquare size={14} className="mr-2" /> Tarefa
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setAction({
+                    type: 'document',
+                    mode: 'create',
+                    defaultProjectId: id,
+                  })
+                }
+              >
+                <FileText size={14} className="mr-2" /> Doc
+              </Button>
+              <Button
+                size="sm"
+                onClick={() =>
+                  setAction({
+                    type: 'canvas',
+                    mode: 'create',
+                    defaultProjectId: id,
+                  })
+                }
+              >
+                <Plus size={14} className="mr-2" /> Funil
+              </Button>
             </div>
-            <p className="text-muted-foreground text-base">
-              {project.description}
-            </p>
           </div>
 
-          <div className="flex items-center gap-6 bg-background p-4 rounded-2xl border border-border">
-            <div className="flex flex-col px-4 border-r border-border last:border-0">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Funis
-              </span>
-              <span className="text-2xl font-bold text-foreground leading-none">
-                {projectFunnels.length}
-              </span>
+          <div className="flex flex-col lg:flex-row justify-between gap-6 items-start lg:items-center">
+            <div className="space-y-2 max-w-2xl">
+              <div className="flex items-center gap-3">
+                <h1 className="text-4xl font-bold tracking-tight text-foreground">
+                  {project.name}
+                </h1>
+                <Badge
+                  variant="outline"
+                  className={
+                    project.status === 'Ativo'
+                      ? 'bg-success-bg text-success-foreground border-none'
+                      : 'bg-muted text-muted-foreground border-none'
+                  }
+                >
+                  {project.status}
+                </Badge>
+              </div>
+              <p className="text-muted-foreground text-base">
+                {project.description}
+              </p>
             </div>
-            <div className="flex flex-col px-4 border-r border-border last:border-0">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Tasks
-              </span>
-              <span className="text-2xl font-bold text-foreground leading-none">
-                {completedTasks}/{totalTasks}
-              </span>
-            </div>
-            <div className="flex flex-col px-4 border-r border-border last:border-0">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Docs
-              </span>
-              <span className="text-2xl font-bold text-foreground leading-none">
-                {projectDocs.length}
-              </span>
-            </div>
-            <div className="flex flex-col px-4 border-r border-border last:border-0">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                Assets
-              </span>
-              <span className="text-2xl font-bold text-foreground leading-none">
-                {projectAssets.length + projectSwipes.length}
-              </span>
+
+            <div className="flex items-center gap-6 bg-background p-4 rounded-2xl border border-border">
+              <div className="flex flex-col px-4 border-r border-border last:border-0">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Funis
+                </span>
+                <span className="text-2xl font-bold text-foreground leading-none">
+                  {projectFunnels.length}
+                </span>
+              </div>
+              <div className="flex flex-col px-4 border-r border-border last:border-0">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Tasks
+                </span>
+                <span className="text-2xl font-bold text-foreground leading-none">
+                  {completedTasks}/{totalTasks}
+                </span>
+              </div>
+              <div className="flex flex-col px-4 border-r border-border last:border-0">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Docs
+                </span>
+                <span className="text-2xl font-bold text-foreground leading-none">
+                  {projectDocs.length}
+                </span>
+              </div>
+              <div className="flex flex-col px-4 border-r border-border last:border-0">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Assets
+                </span>
+                <span className="text-2xl font-bold text-foreground leading-none">
+                  {projectAssets.length + projectSwipes.length}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -226,38 +228,40 @@ export default function ProjectDetail() {
 
       <Tabs defaultValue="funnels" className="flex-1 flex flex-col min-h-0">
         <div className="px-6 md:px-8 py-4 bg-card border-b border-border shrink-0 z-0">
-          <TabsList className="bg-background gap-2 p-1.5 rounded-full flex flex-wrap justify-start border border-border inline-flex h-auto">
-            <TabsTrigger
-              value="funnels"
-              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
-            >
-              <Network size={16} className="mr-2" /> Funnels
-            </TabsTrigger>
-            <TabsTrigger
-              value="tasks"
-              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
-            >
-              <CheckSquare size={16} className="mr-2" /> Tasks
-            </TabsTrigger>
-            <TabsTrigger
-              value="documents"
-              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
-            >
-              <FileText size={16} className="mr-2" /> Documents
-            </TabsTrigger>
-            <TabsTrigger
-              value="assets"
-              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
-            >
-              <ImageIcon size={16} className="mr-2" /> Assets & Swipe
-            </TabsTrigger>
-            <TabsTrigger
-              value="insights"
-              className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
-            >
-              <Lightbulb size={16} className="mr-2" /> Insights
-            </TabsTrigger>
-          </TabsList>
+          <div className="max-w-[1600px] mx-auto w-full">
+            <TabsList className="bg-background gap-2 p-1.5 rounded-full flex flex-wrap justify-start border border-border inline-flex h-auto">
+              <TabsTrigger
+                value="funnels"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
+              >
+                <Network size={16} className="mr-2" /> Funnels
+              </TabsTrigger>
+              <TabsTrigger
+                value="tasks"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
+              >
+                <CheckSquare size={16} className="mr-2" /> Tasks
+              </TabsTrigger>
+              <TabsTrigger
+                value="documents"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
+              >
+                <FileText size={16} className="mr-2" /> Documents
+              </TabsTrigger>
+              <TabsTrigger
+                value="assets"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
+              >
+                <ImageIcon size={16} className="mr-2" /> Assets & Swipe
+              </TabsTrigger>
+              <TabsTrigger
+                value="insights"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
+              >
+                <Lightbulb size={16} className="mr-2" /> Insights
+              </TabsTrigger>
+            </TabsList>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8 bg-background relative flex flex-col">
@@ -266,7 +270,7 @@ export default function ProjectDetail() {
             className="flex-1 m-0 data-[state=active]:flex flex-col border-none outline-none"
           >
             {!selectedFunnelId ? (
-              <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
+              <div className="flex flex-col flex-1 max-w-[1600px] mx-auto w-full">
                 <div className="flex justify-between items-center mb-6 shrink-0">
                   <h3 className="text-2xl font-bold text-foreground">
                     Funis do Projeto
@@ -362,7 +366,7 @@ export default function ProjectDetail() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 relative rounded-xl border border-border overflow-hidden bg-background shadow-sm flex flex-col min-h-[600px] -mx-2 sm:mx-0">
+              <div className="flex-1 relative rounded-xl border border-border overflow-hidden bg-background shadow-sm flex flex-col min-h-[600px] -mx-2 sm:mx-0 max-w-[1600px] mx-auto w-full">
                 <CanvasBoard
                   funnel={
                     projectFunnels.find((f) => f.id === selectedFunnelId)!
@@ -379,7 +383,7 @@ export default function ProjectDetail() {
             value="tasks"
             className="flex-1 m-0 data-[state=active]:flex flex-col border-none outline-none"
           >
-            <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
+            <div className="flex flex-col flex-1 max-w-[1600px] mx-auto w-full">
               <div className="flex justify-between items-center mb-6 shrink-0">
                 <h3 className="text-2xl font-bold text-foreground">Tarefas</h3>
                 <Button
@@ -434,7 +438,7 @@ export default function ProjectDetail() {
             value="documents"
             className="flex-1 m-0 data-[state=active]:flex flex-col border-none outline-none"
           >
-            <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
+            <div className="flex flex-col flex-1 max-w-[1600px] mx-auto w-full">
               <div className="flex justify-between items-center mb-6 shrink-0">
                 <h3 className="text-2xl font-bold text-foreground">
                   Documentos
@@ -511,7 +515,7 @@ export default function ProjectDetail() {
             value="assets"
             className="flex-1 m-0 data-[state=active]:flex flex-col border-none outline-none"
           >
-            <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
+            <div className="flex flex-col flex-1 max-w-[1600px] mx-auto w-full">
               <div className="flex justify-between items-center mb-6 shrink-0">
                 <h3 className="text-2xl font-bold text-foreground">
                   Assets & Swipe
@@ -679,7 +683,7 @@ export default function ProjectDetail() {
             value="insights"
             className="flex-1 m-0 data-[state=active]:flex flex-col border-none outline-none"
           >
-            <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full">
+            <div className="flex flex-col flex-1 max-w-[1600px] mx-auto w-full">
               <div className="flex justify-between items-center mb-6 shrink-0">
                 <h3 className="text-2xl font-bold text-foreground">Insights</h3>
                 <Button
