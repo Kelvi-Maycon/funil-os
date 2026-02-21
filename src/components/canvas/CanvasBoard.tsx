@@ -786,7 +786,11 @@ export default function CanvasBoard({
               {selectedNodeObj
                 ? selectedNodeObj.type === 'FloatingText'
                   ? 'Text Style'
-                  : 'SHAPE STYLE'
+                  : ['Square', 'Diamond', 'Circle'].includes(
+                        selectedNodeObj.type,
+                      )
+                    ? 'SHAPE STYLE'
+                    : 'NODE STYLE'
                 : 'Line Style'}
             </h4>
           </div>
@@ -834,6 +838,18 @@ export default function CanvasBoard({
                       '#fef08a',
                       '#ffedd5',
                       '#fee2e2',
+                      '#1e293b',
+                      '#64748b',
+                      '#ef4444',
+                      '#f97316',
+                      '#f59e0b',
+                      '#84cc16',
+                      '#10b981',
+                      '#06b6d4',
+                      '#3b82f6',
+                      '#6366f1',
+                      '#a855f7',
+                      '#ec4899',
                     ].map((c) => (
                       <button
                         key={c}
@@ -993,6 +1009,95 @@ export default function CanvasBoard({
                         />
                       </svg>
                     </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+          {selectedNodeObj &&
+            ![
+              'FloatingText',
+              'Text',
+              'Image',
+              'Square',
+              'Diamond',
+              'Circle',
+            ].includes(selectedNodeObj.type) && (
+              <>
+                <div className="space-y-3">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                    Background Opacity
+                  </label>
+                  <div className="flex gap-4 items-center">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      className="flex-1 accent-purple-500 h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
+                      value={selectedNodeObj.style?.opacity ?? 1}
+                      onChange={(e) =>
+                        updateNodeStyle({ opacity: parseFloat(e.target.value) })
+                      }
+                    />
+                    <span className="text-[13px] font-medium text-slate-600 w-8 text-right">
+                      {Math.round((selectedNodeObj.style?.opacity ?? 1) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                    Background Color
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      'transparent',
+                      '#f8fafc',
+                      '#fce7f3',
+                      '#f3e8ff',
+                      '#e0e7ff',
+                      '#dbeafe',
+                      '#d1fae5',
+                      '#dcfce7',
+                      '#fef9c3',
+                      '#fef08a',
+                      '#ffedd5',
+                      '#fee2e2',
+                      '#1e293b',
+                      '#64748b',
+                      '#ef4444',
+                      '#f97316',
+                      '#f59e0b',
+                      '#84cc16',
+                      '#10b981',
+                      '#06b6d4',
+                      '#3b82f6',
+                      '#6366f1',
+                      '#a855f7',
+                      '#ec4899',
+                    ].map((c) => (
+                      <button
+                        key={c}
+                        className={cn(
+                          'w-7 h-7 rounded-lg border-2 transition-transform',
+                          selectedNodeObj.style?.fill === c ||
+                            (c === 'transparent' &&
+                              !selectedNodeObj.style?.fill)
+                            ? 'border-slate-800 scale-110'
+                            : 'border-slate-200 hover:scale-110',
+                        )}
+                        style={{
+                          backgroundColor: c === 'transparent' ? '#fff' : c,
+                          backgroundImage:
+                            c === 'transparent'
+                              ? 'radial-gradient(#e2e8f0 1px, transparent 0)'
+                              : 'none',
+                          backgroundSize: '4px 4px',
+                        }}
+                        onClick={() => updateNodeStyle({ fill: c })}
+                      />
+                    ))}
                   </div>
                 </div>
               </>

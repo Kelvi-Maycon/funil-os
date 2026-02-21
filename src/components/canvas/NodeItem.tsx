@@ -332,11 +332,35 @@ export default function NodeItem({
     }
   }
 
+  const getBackgroundColor = () => {
+    if (node.data.isTaskMode && node.data.isCompleted) return undefined
+    const fill = node.style?.fill
+    const opacity = node.style?.opacity ?? 1
+    if (!fill || fill === 'transparent') {
+      if (opacity < 1) return `rgba(255, 255, 255, ${opacity})`
+      return undefined
+    }
+    if (fill.startsWith('#')) {
+      let r, g, b
+      if (fill.length === 4) {
+        r = parseInt(fill[1] + fill[1], 16)
+        g = parseInt(fill[2] + fill[2], 16)
+        b = parseInt(fill[3] + fill[3], 16)
+      } else {
+        r = parseInt(fill.slice(1, 3), 16)
+        g = parseInt(fill.slice(3, 5), 16)
+        b = parseInt(fill.slice(5, 7), 16)
+      }
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`
+    }
+    return fill
+  }
+
   if (node.type === 'FloatingText') {
     return (
       <div
         className={cn(
-          'absolute top-0 left-0 pointer-events-auto min-w-[50px] p-2 z-10 transition-all group outline-none',
+          'absolute top-0 left-0 pointer-events-auto min-w-[50px] p-2 z-10 group outline-none',
           selected && 'ring-2 ring-primary/20 bg-primary/5 rounded-md',
           isDragging
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing'
@@ -351,6 +375,9 @@ export default function NodeItem({
         style={{
           transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
           color: node.style?.color || '#1e293b',
+          transition: isDragging
+            ? 'none'
+            : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
         }}
         onPointerDown={(e) => {
           if (isEditingText) {
@@ -440,21 +467,24 @@ export default function NodeItem({
     return (
       <div
         className={cn(
-          'absolute top-0 left-0 pointer-events-auto flex items-center justify-center z-10 transition-all group text-slate-700',
+          'absolute top-0 left-0 pointer-events-auto flex items-center justify-center z-10 group text-slate-700',
           selected && 'shadow-md',
           isDragging || isResizing
-            ? 'opacity-90 z-50 shadow-lg'
+            ? 'opacity-90 z-50 shadow-lg cursor-grabbing scale-[1.02]'
             : isPanMode
               ? 'cursor-grab'
               : isSelectMode
                 ? 'cursor-pointer'
                 : '',
-          isDragging && 'scale-[1.02] cursor-grabbing',
         )}
         style={{
           transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
           width: w,
           height: h,
+          transition:
+            isDragging || isResizing
+              ? 'none'
+              : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1), width 0.15s, height 0.15s',
         }}
         onPointerDown={handlePointerDown}
         onMouseEnter={() => setIsHovered(true)}
@@ -482,9 +512,10 @@ export default function NodeItem({
                   : node.style?.strokeDasharray
               }
               className={cn(
-                'transition-all pointer-events-auto',
+                'pointer-events-auto',
                 selected && 'stroke-purple-400 drop-shadow-md',
               )}
+              style={{ transition: isResizing ? 'none' : 'all 0.15s' }}
             />
           )}
           {node.type === 'Circle' && (
@@ -503,9 +534,10 @@ export default function NodeItem({
                   : node.style?.strokeDasharray
               }
               className={cn(
-                'transition-all pointer-events-auto',
+                'pointer-events-auto',
                 selected && 'stroke-purple-400 drop-shadow-md',
               )}
+              style={{ transition: isResizing ? 'none' : 'all 0.15s' }}
             />
           )}
           {node.type === 'Diamond' && (
@@ -522,9 +554,10 @@ export default function NodeItem({
               }
               strokeLinejoin="round"
               className={cn(
-                'transition-all pointer-events-auto',
+                'pointer-events-auto',
                 selected && 'stroke-purple-400 drop-shadow-md',
               )}
+              style={{ transition: isResizing ? 'none' : 'all 0.15s' }}
             />
           )}
         </svg>
@@ -611,7 +644,7 @@ export default function NodeItem({
     return (
       <div
         className={cn(
-          'absolute top-0 left-0 pointer-events-auto min-w-[150px] max-w-[400px] p-4 bg-yellow-50/90 backdrop-blur-sm rounded-xl shadow-sm border border-yellow-200 text-slate-800 z-10 transition-all group',
+          'absolute top-0 left-0 pointer-events-auto min-w-[150px] max-w-[400px] p-4 bg-yellow-50/90 backdrop-blur-sm rounded-xl shadow-sm border border-yellow-200 text-slate-800 z-10 group',
           selected && 'ring-2 ring-yellow-400 shadow-md',
           isDragging
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing shadow-lg'
@@ -623,7 +656,12 @@ export default function NodeItem({
                   : 'cursor-pointer'
                 : '',
         )}
-        style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
+        style={{
+          transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
+          transition: isDragging
+            ? 'none'
+            : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
+        }}
         onPointerDown={(e) => {
           if (isEditingText) {
             e.stopPropagation()
@@ -679,7 +717,7 @@ export default function NodeItem({
     return (
       <div
         className={cn(
-          'absolute top-0 left-0 pointer-events-auto w-[300px] rounded-2xl shadow-sm border border-slate-200 bg-white z-10 transition-all overflow-hidden group',
+          'absolute top-0 left-0 pointer-events-auto w-[300px] rounded-2xl shadow-sm border border-slate-200 bg-white z-10 overflow-hidden group',
           selected && 'ring-4 ring-primary/20 border-primary/30 shadow-md',
           isDragging
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing shadow-lg'
@@ -689,7 +727,12 @@ export default function NodeItem({
                 ? 'cursor-pointer'
                 : '',
         )}
-        style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
+        style={{
+          transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
+          transition: isDragging
+            ? 'none'
+            : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
+        }}
         onPointerDown={handlePointerDown}
         onDoubleClick={(e) => {
           if (!isPanMode && isSelectMode) {
@@ -732,20 +775,23 @@ export default function NodeItem({
   return (
     <div
       className={cn(
-        'absolute top-0 left-0 pointer-events-auto w-[260px] rounded-[1.25rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border p-5 z-10 flex flex-col gap-2 group select-none transition-all',
+        'absolute top-0 left-0 pointer-events-auto w-[260px] rounded-[1.25rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border p-5 z-10 flex flex-col gap-2 group select-none',
         (selected || isHovered) &&
           'shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-4 ring-slate-50',
         isDragging &&
           'opacity-90 scale-[1.02] z-50 shadow-[0_12px_40px_rgba(0,0,0,0.1)] ring-4 ring-primary/10 border-primary/20',
         node.data.isTaskMode && node.data.isCompleted
           ? 'bg-[#ecfdf5] border-[#bbf7d0]'
-          : 'bg-white border-slate-100',
+          : (node.style?.fill && node.style.fill !== 'transparent') ||
+              (node.style?.opacity ?? 1) < 1
+            ? 'border-slate-100'
+            : 'bg-white border-slate-100',
       )}
       style={{
         transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
         transition: isDragging
           ? 'none'
-          : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s, opacity 0.2s, background-color 0.3s',
+          : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s, background-color 0.3s',
         cursor: isPanMode
           ? 'grab'
           : isDragging
@@ -753,6 +799,7 @@ export default function NodeItem({
             : isSelectMode
               ? 'pointer'
               : '',
+        backgroundColor: getBackgroundColor(),
       }}
       onPointerDown={handlePointerDown}
       onDoubleClick={(e) => {
