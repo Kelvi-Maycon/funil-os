@@ -45,18 +45,16 @@ function AppSidebar() {
       collapsible="icon"
       className="border-r border-border bg-card z-30 shadow-sm"
     >
-      <SidebarHeader className="h-16 flex flex-row items-center justify-between px-3 shrink-0 relative">
-        <div className="flex items-center gap-2 overflow-hidden group-data-[collapsible=icon]:hidden">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm">
+      <SidebarHeader className="h-16 flex flex-row items-center justify-between px-4 shrink-0 transition-all duration-200 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:justify-center">
+        <div className="flex items-center overflow-hidden transition-all duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm mr-2">
             <Zap size={18} className="fill-white" />
           </div>
-          <span className="font-bold text-lg text-foreground truncate">
+          <span className="font-bold text-lg text-foreground truncate whitespace-nowrap">
             Funil OS
           </span>
         </div>
-        <div className="group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-          <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-        </div>
+        <SidebarTrigger className="text-muted-foreground hover:text-foreground shrink-0" />
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-4 flex flex-col gap-2 overflow-y-auto overflow-x-hidden no-scrollbar">
@@ -73,15 +71,19 @@ function AppSidebar() {
                     isActive={isActive}
                     tooltip={item.title}
                     className={cn(
-                      'transition-all duration-200 h-10 rounded-lg',
+                      'transition-all duration-200 h-10 rounded-lg group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:justify-center',
                       isActive
                         ? 'bg-primary/10 text-primary font-semibold hover:bg-primary/15 hover:text-primary'
                         : 'text-muted-foreground font-medium hover:bg-muted hover:text-foreground',
                     )}
                   >
-                    <Link to={item.url} className="flex items-center gap-3">
-                      <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                      <span className="group-data-[collapsible=icon]:hidden">
+                    <Link to={item.url}>
+                      <item.icon
+                        size={20}
+                        strokeWidth={isActive ? 2.5 : 2}
+                        className="shrink-0"
+                      />
+                      <span className="truncate whitespace-nowrap overflow-hidden transition-all duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
                         {item.title}
                       </span>
                     </Link>
@@ -93,16 +95,16 @@ function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-3 shrink-0">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-foreground font-semibold text-sm cursor-pointer hover:bg-border transition-colors border border-border shrink-0">
+      <SidebarFooter className="p-3 group-data-[collapsible=icon]:p-2 shrink-0 transition-all duration-200">
+        <div className="flex items-center w-full group-data-[collapsible=icon]:justify-center">
+          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-foreground font-semibold text-sm cursor-pointer hover:bg-border transition-colors border border-border shrink-0 mr-3 group-data-[collapsible=icon]:mr-0">
             DK
           </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-bold text-foreground truncate">
+          <div className="flex flex-col overflow-hidden transition-all duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+            <span className="text-sm font-bold text-foreground truncate whitespace-nowrap">
               Diego K.
             </span>
-            <span className="text-xs text-muted-foreground truncate">
+            <span className="text-xs text-muted-foreground truncate whitespace-nowrap">
               diego@funilos.com
             </span>
           </div>
