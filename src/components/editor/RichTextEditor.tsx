@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Network,
   X,
+  GripVertical,
 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -150,6 +151,7 @@ export default function RichTextEditor({
 }) {
   const navigate = useNavigate()
   const editorRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [funnels, setFunnels] = useFunnelStore()
   const [projects] = useProjectStore()
   const [canvasModalOpen, setCanvasModalOpen] = useState(false)
@@ -158,6 +160,17 @@ export default function RichTextEditor({
   const [imageUrl, setImageUrl] = useState('')
   const [savedRange, setSavedRange] = useState<Range | null>(null)
   const [editingCanvasId, setEditingCanvasId] = useState<string | null>(null)
+
+  const [panelWidth, setPanelWidth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth >= 1280) return 600
+      if (window.innerWidth >= 1024) return 500
+      return 450
+    }
+    return 500
+  })
+  const [isResizing, setIsResizing] = useState(false)
+  const isResizingRef = useRef(false)
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== doc.content) {
@@ -341,19 +354,61 @@ export default function RichTextEditor({
     }
   }
 
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    isResizingRef.current = true
+    setIsResizing(true)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      if (!isResizingRef.current || !containerRef.current) return
+      const containerRect = containerRef.current.getBoundingClientRect()
+      const newWidth = containerRect.right - ev.clientX
+      const minW = 450
+      const maxW = Math.min(window.innerWidth * 0.8, containerRect.width - 300)
+
+      if (newWidth >= minW && newWidth <= maxW) {
+        setPanelWidth(newWidth)
+      } else if (newWidth < minW) {
+        setPanelWidth(minW)
+      } else if (newWidth > maxW) {
+        setPanelWidth(maxW)
+      }
+    }
+
+    const handleMouseUp = () => {
+      isResizingRef.current = false
+      setIsResizing(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }, [])
+
   const activeCanvas = funnels.find((f) => f.id === editingCanvasId)
 
   return (
-    <div className="flex w-full h-full overflow-hidden bg-background relative">
+    <div
+      ref={containerRef}
+      className="flex w-full h-full overflow-hidden bg-background relative"
+    >
       <div
         className={cn(
-          'flex flex-col h-full overflow-y-auto transition-all duration-300 ease-in-out flex-1 min-w-0',
+          'flex flex-col h-full overflow-y-auto ease-in-out flex-1 min-w-0',
+          !isResizing && 'transition-all duration-300',
           editingCanvasId ? 'pr-0' : '',
         )}
       >
         <div
           className={cn(
-            'flex flex-col flex-1 mx-auto w-full transition-all duration-300',
+            'flex flex-col flex-1 mx-auto w-full',
+            !isResizing && 'transition-all duration-300',
             editingCanvasId ? 'p-6 lg:p-8 max-w-4xl' : 'p-8 max-w-5xl',
           )}
         >
@@ -581,7 +636,24 @@ export default function RichTextEditor({
       </div>
 
       {editingCanvasId && activeCanvas && (
-        <div className="w-[450px] lg:w-[500px] xl:w-[600px] h-full flex flex-col bg-background shadow-[-10px_0_40px_rgba(0,0,0,0.08)] animate-in slide-in-from-right z-20 shrink-0 border-l border-border">
+        <div
+          style={{ width: `${panelWidth}px` }}
+          className={cn(
+            'h-full flex flex-col bg-background shadow-[-10px_0_40px_rgba(0,0,0,0.08)] z-20 shrink-0 border-l border-border relative',
+            !isResizing && 'transition-all duration-300',
+            'animate-in slide-in-from-right',
+          )}
+        >
+          <div
+            className="absolute -left-3 top-0 bottom-0 w-6 cursor-col-resize z-50 group/resizer flex items-center justify-center"
+            onMouseDown={startResizing}
+          >
+            <div className="absolute w-1.5 h-full left-1/2 -translate-x-1/2 opacity-0 group-hover/resizer:opacity-100 bg-primary/20 transition-opacity" />
+            <div className="w-[20px] h-[48px] bg-slate-900 rounded-full flex items-center justify-center text-white shadow-md transition-transform group-hover/resizer:scale-105 z-10">
+              <GripVertical size={14} className="opacity-80" />
+            </div>
+          </div>
+
           <div className="h-16 border-b flex items-center justify-between px-6 bg-card shrink-0 shadow-sm z-10 relative">
             <div className="flex items-center gap-3 text-primary">
               <Network size={20} />
