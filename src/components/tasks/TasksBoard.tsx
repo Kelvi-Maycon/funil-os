@@ -1,8 +1,15 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Task } from '@/types'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal, Paperclip, MessageSquare, Plus } from 'lucide-react'
+import {
+  MoreHorizontal,
+  Paperclip,
+  MessageSquare,
+  Plus,
+  Network,
+} from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -45,13 +52,13 @@ export default function TasksBoard({
   updateTask: (id: string, updates: Partial<Task>) => void
   onCardClick: (t: Task) => void
 }) {
+  const navigate = useNavigate()
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData('taskId', id)
     e.dataTransfer.effectAllowed = 'move'
-    // Defer state update to allow browser to snapshot element with full opacity
     setTimeout(() => setDraggingId(id), 0)
   }
 
@@ -120,7 +127,7 @@ export default function TasksBoard({
                     onDragEnd={handleDragEnd}
                     onClick={() => onCardClick(t)}
                     className={cn(
-                      'cursor-pointer hover:shadow-md transition-all active:cursor-grabbing border-none shadow-sm rounded-xl bg-card',
+                      'cursor-pointer hover:shadow-md transition-all active:cursor-grabbing border-none shadow-sm rounded-xl bg-card relative',
                       isDragging
                         ? 'opacity-40 scale-[0.98] shadow-none ring-1 ring-primary/20'
                         : 'opacity-100',
@@ -167,6 +174,20 @@ export default function TasksBoard({
                           </div>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-slate-400 font-medium">
+                          {t.funnelId && t.nodeId && (
+                            <button
+                              className="text-purple-600 hover:text-purple-700 bg-purple-50 p-1.5 rounded-md transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                navigate(
+                                  `/canvas/${t.funnelId}?nodeId=${t.nodeId}`,
+                                )
+                              }}
+                              title="Ver no Canvas"
+                            >
+                              <Network size={12} />
+                            </button>
+                          )}
                           <div className="flex items-center gap-1">
                             <Paperclip size={12} />
                             {t.attachmentCount || 0}

@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Clock,
   ExternalLink,
+  Image as ImageIcon,
 } from 'lucide-react'
 
 const icons: Record<string, any> = {
@@ -40,6 +41,7 @@ type NodeItemProps = {
   selected: boolean
   snapToGrid?: boolean
   isPanMode: boolean
+  taskProgress: { total: number; completed: number }
   onSelect: () => void
   onMoveStart: () => void
   onMove: (x: number, y: number) => void
@@ -52,6 +54,7 @@ type NodeItemProps = {
   onAddChild: () => void
   onTextChange: (text: string) => void
   onEdgeDragStart: (nodeId: string, e: React.PointerEvent) => void
+  onDropResource: (type: string, id: string) => void
 }
 
 export default function NodeItem({
@@ -59,6 +62,7 @@ export default function NodeItem({
   selected,
   snapToGrid,
   isPanMode,
+  taskProgress,
   onSelect,
   onMoveStart,
   onMove,
@@ -71,6 +75,7 @@ export default function NodeItem({
   onAddChild,
   onTextChange,
   onEdgeDragStart,
+  onDropResource,
 }: NodeItemProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -122,6 +127,16 @@ export default function NodeItem({
     window.addEventListener('pointerup', handlePointerUp)
   }
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const resType = e.dataTransfer.getData('resourceType')
+    const resId = e.dataTransfer.getData('resourceId')
+    if (resType && resId) {
+      onDropResource(resType, resId)
+    }
+  }
+
   if (node.type === 'Text') {
     return (
       <div
@@ -151,22 +166,6 @@ export default function NodeItem({
         >
           {node.data.name}
         </div>
-        <div
-          className={cn(
-            'absolute -top-3 -right-3 flex items-center gap-1.5 transition-opacity',
-            selected || isHovered ? 'opacity-100' : 'opacity-0',
-          )}
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-            className="w-7 h-7 bg-white border border-slate-100 rounded-full flex items-center justify-center text-red-500 hover:text-red-600 shadow-sm"
-          >
-            <Trash2 size={12} />
-          </button>
-        </div>
       </div>
     )
   }
@@ -194,27 +193,17 @@ export default function NodeItem({
           alt="Canvas"
           className="w-full h-auto object-cover pointer-events-none select-none"
         />
-        <div
-          className={cn(
-            'absolute top-3 right-3 flex items-center gap-1.5 transition-opacity',
-            selected || isHovered ? 'opacity-100' : 'opacity-0',
-          )}
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-            className="w-8 h-8 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-full flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-white shadow-sm"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
       </div>
     )
   }
 
   const Icon = icons[node.type] || icons.Default
+  const circumference = 2 * Math.PI * 8
+  const strokeDashoffset =
+    taskProgress.total > 0
+      ? circumference -
+        (taskProgress.completed / taskProgress.total) * circumference
+      : circumference
 
   return (
     <div
@@ -235,8 +224,53 @@ export default function NodeItem({
       onPointerDown={handlePointerDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onDragOver={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      }}
+      onDrop={handleDrop}
       data-node-id={node.id}
     >
+      <div className="absolute -top-3 left-4 flex gap-1.5 z-20">
+        {(node.data.linkedDocumentIds?.length ?? 0) > 0 && (
+          <div className="w-6 h-6 rounded-full bg-blue-100 border border-blue-200 text-blue-600 flex items-center justify-center shadow-sm">
+            <FileText size={12} strokeWidth={2.5} />
+          </div>
+        )}
+        {(node.data.linkedAssetIds?.length ?? 0) > 0 && (
+          <div className="w-6 h-6 rounded-full bg-purple-100 border border-purple-200 text-purple-600 flex items-center justify-center shadow-sm">
+            <ImageIcon size={12} strokeWidth={2.5} />
+          </div>
+        )}
+      </div>
+
+      {taskProgress.total > 0 && (
+        <div className="absolute -top-3 right-6 w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center z-20 border border-slate-100">
+          <svg width="20" height="20" className="transform -rotate-90">
+            <circle
+              cx="10"
+              cy="10"
+              r="8"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="transparent"
+              className="text-slate-100"
+            />
+            <circle
+              cx="10"
+              cy="10"
+              r="8"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="transparent"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              className="text-green-500 transition-all duration-500"
+            />
+          </svg>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 text-slate-500 mb-1">
         <Icon size={16} strokeWidth={1.5} />
         <span className="text-[13px] font-medium tracking-wide">
@@ -263,15 +297,6 @@ export default function NodeItem({
         <button
           onClick={(e) => {
             e.stopPropagation()
-            onOpenSettings()
-          }}
-          className="w-8 h-8 bg-white border border-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 shadow-sm transition-transform hover:scale-105"
-        >
-          <Settings size={14} strokeWidth={2} />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
             onOpenNotes()
           }}
           className="w-8 h-8 bg-white border border-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 shadow-sm transition-transform hover:scale-105"
@@ -288,30 +313,6 @@ export default function NodeItem({
           <Trash2 size={14} strokeWidth={2} />
         </button>
       </div>
-
-      {node.data.isTaskMode && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggleComplete()
-          }}
-          className={cn(
-            'absolute -bottom-3 left-4 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors z-20 shadow-sm bg-white',
-            node.data.isCompleted
-              ? 'border-green-500 bg-green-500 text-white'
-              : 'border-slate-200 hover:border-slate-300 text-transparent',
-          )}
-        >
-          <Check
-            size={12}
-            strokeWidth={3}
-            className={cn(
-              'transition-opacity',
-              node.data.isCompleted ? 'opacity-100' : 'opacity-0',
-            )}
-          />
-        </button>
-      )}
 
       {!isPanMode && (
         <div

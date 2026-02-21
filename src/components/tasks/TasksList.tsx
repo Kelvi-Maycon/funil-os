@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { Task } from '@/types'
 import {
   Table,
@@ -8,8 +9,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { ArrowUpDown } from 'lucide-react'
+import { ArrowUpDown, Network } from 'lucide-react'
 
 const statusConfig = {
   'A Fazer': {
@@ -49,6 +51,8 @@ export default function TasksList({
   tasks: Task[]
   onRowClick: (t: Task) => void
 }) {
+  const navigate = useNavigate()
+
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
       <Table>
@@ -74,6 +78,9 @@ export default function TasksList({
             </TableHead>
             <TableHead className="text-right font-semibold text-foreground">
               Status
+            </TableHead>
+            <TableHead className="text-right font-semibold text-foreground">
+              Ações
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -115,13 +122,28 @@ export default function TasksList({
                     {sc.label}
                   </Badge>
                 </TableCell>
+                <TableCell className="text-right">
+                  {t.funnelId && t.nodeId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate(`/canvas/${t.funnelId}?nodeId=${t.nodeId}`)
+                      }}
+                      className="text-purple-600 border-purple-200 bg-purple-50 hover:bg-purple-100"
+                    >
+                      <Network size={14} className="mr-1.5" /> Canvas
+                    </Button>
+                  )}
+                </TableCell>
               </TableRow>
             )
           })}
           {tasks.length === 0 && (
             <TableRow>
               <TableCell
-                colSpan={5}
+                colSpan={6}
                 className="h-24 text-center text-muted-foreground"
               >
                 No tasks found.

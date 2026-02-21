@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Funnel, Node, Edge, NodeData } from '@/types'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Funnel, Node, Edge, NodeData, Asset } from '@/types'
 import BlockPalette from './BlockPalette'
 import NodeItem from './NodeItem'
 import RightPanel from './RightPanel'
@@ -26,6 +26,11 @@ import {
   TooltipContent,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import useTaskStore from '@/stores/useTaskStore'
+import useDocumentStore from '@/stores/useDocumentStore'
+import useAssetStore from '@/stores/useAssetStore'
+import { useToast } from '@/hooks/use-toast'
+import { format } from 'date-fns'
 
 export default function CanvasBoard({
   funnel,
@@ -39,6 +44,12 @@ export default function CanvasBoard({
   onBack?: () => void
 }) {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [tasks, setTasks] = useTaskStore()
+  const [docs, setDocs] = useDocumentStore()
+  const [assets, setAssets] = useAssetStore()
+  const { toast } = useToast()
+
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null)
   const [notesNodeId, setNotesNodeId] = useState<string | null>(null)
@@ -61,6 +72,64 @@ export default function CanvasBoard({
     currentY: number
   } | null>(null)
   const lastPan = useRef({ x: 0, y: 0 })
+
+  const targetNodeId = searchParams.get('nodeId')
+  useEffect(() => {
+    if (targetNodeId && funnel.nodes.length > 0) {
+      const node = funnel.nodes.find((n) => n.id === targetNodeId)
+      if (node && boardRef.current) {
+        const rect = boardRef.current.getBoundingClientRect()
+        setTransform({
+          x: rect.width / 2 - node.x - 130,
+          y: rect.height / 2 - node.y - 40,
+          scale: 1,
+        })
+        setSelectedNode(node.id)
+        setNotesNodeId(node.id)
+        searchParams.delete('nodeId')
+        setSearchParams(searchParams, { replace: true })
+      }
+    }
+  }, [targetNodeId, funnel.nodes, searchParams, setSearchParams])
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const newAsset: Asset = {
+            id: `a_${Date.now()}_${Math.random()}`,
+            projectId: funnel.projectId,
+            name: 'Pasted Image ' + format(new Date(), 'HH:mm:ss'),
+            url: 'https://img.usecurling.com/p/800/600?q=wireframe&color=gray',
+            type: 'image',
+            category: 'Upload',
+            tags: ['pasted', 'canvas'],
+            folderId: null,
+          }
+          setAssets((prev) => [newAsset, ...prev])
+
+          const newNode: Node = {
+            id: `n_${Date.now()}`,
+            type: 'Image',
+            x: -transform.x / transform.scale + 400,
+            y: -transform.y / transform.scale + 200,
+            data: {
+              name: newAsset.url,
+              status: '',
+              subtitle: '',
+              linkedAssetIds: [newAsset.id],
+            },
+          }
+          onChange({ ...funnel, nodes: [...funnel.nodes, newNode] })
+          toast({ title: 'Imagem colada no canvas!' })
+        }
+      }
+    }
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [funnel, setAssets, transform, onChange, toast])
 
   useEffect(() => {
     const el = boardRef.current
@@ -91,29 +160,6 @@ export default function CanvasBoard({
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        (e.target as HTMLElement).isContentEditable
-      )
-        return
-      if (e.key === 'Backspace' || e.key === 'Delete') {
-        if (selectedNode) handleDeleteNode(selectedNode)
-        else if (selectedEdge) {
-          onChange({
-            ...funnel,
-            edges: funnel.edges.filter((edge) => edge.id !== selectedEdge),
-          })
-          setSelectedEdge(null)
-        }
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectedNode, selectedEdge, funnel, onChange])
 
   const handlePanStart = (e: React.PointerEvent) => {
     if (
@@ -279,6 +325,45 @@ export default function CanvasBoard({
         },
       ],
     })
+  }
+
+  const handleDropResource = (nodeId: string, type: string, id: string) => {
+    const updatedNodes = funnel.nodes.map((n) => {
+      if (n.id === nodeId) {
+        const key =
+          type === 'document'
+            ? 'linkedDocumentIds'
+            : type === 'task'
+              ? 'linkedTaskIds'
+              : 'linkedAssetIds'
+        const currentIds = (n.data[key as keyof NodeData] as string[]) || []
+        if (!currentIds.includes(id)) {
+          return { ...n, data: { ...n.data, [key]: [...currentIds, id] } }
+        }
+      }
+      return n
+    })
+    onChange({ ...funnel, nodes: updatedNodes })
+
+    if (type === 'document') {
+      setDocs(
+        docs.map((d) =>
+          d.id === id ? { ...d, funnelId: funnel.id, nodeId } : d,
+        ),
+      )
+    } else if (type === 'task') {
+      setTasks(
+        tasks.map((t) =>
+          t.id === id ? { ...t, funnelId: funnel.id, nodeId } : t,
+        ),
+      )
+    } else if (type === 'asset') {
+      setAssets(
+        assets.map((a) =>
+          a.id === id ? { ...a, funnelId: funnel.id, nodeId } : a,
+        ),
+      )
+    }
   }
 
   const rightOffset = notesNodeId ? 'right-[520px]' : 'right-6'
@@ -460,7 +545,7 @@ export default function CanvasBoard({
         )}
       >
         <div className="pointer-events-auto flex h-full">
-          <BlockPalette />
+          <BlockPalette funnel={funnel} />
         </div>
       </div>
 
@@ -591,66 +676,82 @@ export default function CanvasBoard({
           </svg>
 
           <div className="absolute inset-0 w-full h-full pointer-events-none">
-            {funnel.nodes.map((n) => (
-              <NodeItem
-                key={n.id}
-                node={
-                  draggedNode?.id === n.id
-                    ? { ...n, x: draggedNode.x, y: draggedNode.y }
-                    : n
-                }
-                selected={selectedNode === n.id}
-                snapToGrid={snapToGrid}
-                isPanMode={isPanMode}
-                onSelect={() => {
-                  setSelectedNode(n.id)
-                  setSelectedEdge(null)
-                }}
-                onMoveStart={() => setDraggedNode({ id: n.id, x: n.x, y: n.y })}
-                onMove={(x, y) => setDraggedNode({ id: n.id, x, y })}
-                onMoveEnd={(x, y) => {
-                  setDraggedNode(null)
-                  onChange({
-                    ...funnel,
-                    nodes: funnel.nodes.map((node) =>
-                      node.id === n.id ? { ...node, x, y } : node,
-                    ),
-                  })
-                }}
-                onAddChild={() => handleAddChild(n.id)}
-                onDelete={() => handleDeleteNode(n.id)}
-                onOpenNotes={() => setNotesNodeId(n.id)}
-                onOpenSettings={() => setSettingsNodeId(n.id)}
-                onToggleComplete={() =>
-                  onChange({
-                    ...funnel,
-                    nodes: funnel.nodes.map((node) =>
-                      node.id === n.id
-                        ? {
-                            ...node,
-                            data: {
-                              ...node.data,
-                              isCompleted: !node.data.isCompleted,
-                            },
-                          }
-                        : node,
-                    ),
-                  })
-                }
-                scale={transform.scale}
-                onTextChange={(text) =>
-                  onChange({
-                    ...funnel,
-                    nodes: funnel.nodes.map((node) =>
-                      node.id === n.id
-                        ? { ...node, data: { ...node.data, name: text } }
-                        : node,
-                    ),
-                  })
-                }
-                onEdgeDragStart={handleEdgeDragStart}
-              />
-            ))}
+            {funnel.nodes.map((n) => {
+              const nodeTasks = tasks.filter((t) =>
+                n.data.linkedTaskIds?.includes(t.id),
+              )
+              const taskProgress = {
+                total: nodeTasks.length,
+                completed: nodeTasks.filter((t) => t.status === 'Concluído')
+                  .length,
+              }
+              return (
+                <NodeItem
+                  key={n.id}
+                  node={
+                    draggedNode?.id === n.id
+                      ? { ...n, x: draggedNode.x, y: draggedNode.y }
+                      : n
+                  }
+                  selected={selectedNode === n.id}
+                  snapToGrid={snapToGrid}
+                  isPanMode={isPanMode}
+                  taskProgress={taskProgress}
+                  onSelect={() => {
+                    setSelectedNode(n.id)
+                    setSelectedEdge(null)
+                  }}
+                  onMoveStart={() =>
+                    setDraggedNode({ id: n.id, x: n.x, y: n.y })
+                  }
+                  onMove={(x, y) => setDraggedNode({ id: n.id, x, y })}
+                  onMoveEnd={(x, y) => {
+                    setDraggedNode(null)
+                    onChange({
+                      ...funnel,
+                      nodes: funnel.nodes.map((node) =>
+                        node.id === n.id ? { ...node, x, y } : node,
+                      ),
+                    })
+                  }}
+                  onAddChild={() => handleAddChild(n.id)}
+                  onDelete={() => handleDeleteNode(n.id)}
+                  onOpenNotes={() => setNotesNodeId(n.id)}
+                  onOpenSettings={() => setSettingsNodeId(n.id)}
+                  onToggleComplete={() =>
+                    onChange({
+                      ...funnel,
+                      nodes: funnel.nodes.map((node) =>
+                        node.id === n.id
+                          ? {
+                              ...node,
+                              data: {
+                                ...node.data,
+                                isCompleted: !node.data.isCompleted,
+                              },
+                            }
+                          : node,
+                      ),
+                    })
+                  }
+                  scale={transform.scale}
+                  onTextChange={(text) =>
+                    onChange({
+                      ...funnel,
+                      nodes: funnel.nodes.map((node) =>
+                        node.id === n.id
+                          ? { ...node, data: { ...node.data, name: text } }
+                          : node,
+                      ),
+                    })
+                  }
+                  onEdgeDragStart={handleEdgeDragStart}
+                  onDropResource={(type, id) =>
+                    handleDropResource(n.id, type, id)
+                  }
+                />
+              )
+            })}
           </div>
         </div>
       </div>
@@ -658,6 +759,7 @@ export default function CanvasBoard({
       {notesNodeId && funnel.nodes.find((n) => n.id === notesNodeId) && (
         <RightPanel
           node={funnel.nodes.find((n) => n.id === notesNodeId)!}
+          funnel={funnel}
           onChange={(n) =>
             onChange({
               ...funnel,

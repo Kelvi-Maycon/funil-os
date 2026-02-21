@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Document, Funnel } from '@/types'
 import { Button } from '@/components/ui/button'
 import {
@@ -147,6 +148,7 @@ export default function RichTextEditor({
   onTitleChange: (t: string) => void
   onProjectChange: (p: string | null) => void
 }) {
+  const navigate = useNavigate()
   const editorRef = useRef<HTMLDivElement>(null)
   const [funnels, setFunnels] = useFunnelStore()
   const [projects] = useProjectStore()
@@ -363,6 +365,18 @@ export default function RichTextEditor({
               placeholder="Título do Documento"
             />
             <div className="ml-auto flex flex-col sm:flex-row items-end sm:items-center gap-2">
+              {doc.funnelId && doc.nodeId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    navigate(`/canvas/${doc.funnelId}?nodeId=${doc.nodeId}`)
+                  }
+                  className="text-purple-600 border-purple-200 bg-purple-50 hover:bg-purple-100 shrink-0"
+                >
+                  <Network size={14} className="mr-1.5" /> Ver no Canvas
+                </Button>
+              )}
               <Select
                 value={doc.projectId || 'none'}
                 onValueChange={(val) =>

@@ -3,9 +3,10 @@ import useTaskStore from '@/stores/useTaskStore'
 import useQuickActionStore from '@/stores/useQuickActionStore'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, LayoutGrid, LayoutList } from 'lucide-react'
+import { Plus, LayoutGrid, LayoutList, List } from 'lucide-react'
 import TasksBoard from '@/components/tasks/TasksBoard'
 import TasksOverview from '@/components/tasks/TasksOverview'
+import TasksList from '@/components/tasks/TasksList'
 import TaskDetailSheet from '@/components/tasks/TaskDetailSheet'
 import { Task } from '@/types'
 
@@ -45,6 +46,12 @@ export default function Tasks() {
           >
             <LayoutGrid className="w-4 h-4 mr-2" /> Quadro
           </TabsTrigger>
+          <TabsTrigger
+            value="list"
+            className="rounded-full px-5 py-2 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-muted-foreground hover:text-foreground font-medium transition-all text-md"
+          >
+            <List className="w-4 h-4 mr-2" /> Lista
+          </TabsTrigger>
         </TabsList>
 
         <div className="flex-1 overflow-auto -mx-4 px-4 pb-8">
@@ -63,6 +70,12 @@ export default function Tasks() {
               updateTask={updateTask}
               onCardClick={setSelectedTask}
             />
+          </TabsContent>
+          <TabsContent
+            value="list"
+            className="mt-0 h-full border-none outline-none"
+          >
+            <TasksList tasks={tasks} onRowClick={setSelectedTask} />
           </TabsContent>
         </div>
       </Tabs>

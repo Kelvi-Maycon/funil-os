@@ -14,6 +14,9 @@ export type NodeData = {
   description?: string
   isTaskMode?: boolean
   isCompleted?: boolean
+  linkedDocumentIds?: string[]
+  linkedAssetIds?: string[]
+  linkedTaskIds?: string[]
 }
 export type Node = {
   id: string
@@ -56,6 +59,7 @@ export type Task = {
   title: string
   projectId?: string | null
   funnelId?: string
+  nodeId?: string
   blockId?: string
   priority: 'Baixa' | 'Média' | 'Alta'
   status: 'A Fazer' | 'Em Progresso' | 'Em Revisão' | 'Concluído'
@@ -79,6 +83,8 @@ export type Folder = {
 export type Document = {
   id: string
   projectId?: string | null
+  funnelId?: string
+  nodeId?: string
   title: string
   content: string
   updatedAt: string
@@ -87,6 +93,8 @@ export type Document = {
 export type Asset = {
   id: string
   projectId?: string | null
+  funnelId?: string
+  nodeId?: string
   name: string
   url: string
   type: 'image' | 'pdf' | 'link'
