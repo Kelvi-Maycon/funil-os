@@ -189,7 +189,9 @@ export default function NodeItem({
     const handlePointerUp = (upEv: PointerEvent) => {
       try {
         target.releasePointerCapture(upEv.pointerId)
-      } catch (err) {}
+      } catch (err) {
+        // ignore
+      }
       setIsDragging(false)
       document.body.style.userSelect = ''
       let finalX = initialX + (upEv.clientX - startX) / scale
@@ -263,7 +265,9 @@ export default function NodeItem({
     const handlePointerUp = (upEv: PointerEvent) => {
       try {
         target.releasePointerCapture(upEv.pointerId)
-      } catch (err) {}
+      } catch (err) {
+        /* ignore */
+      }
       setIsResizing(false)
       document.body.style.userSelect = ''
 
