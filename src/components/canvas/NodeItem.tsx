@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Node, Task } from '@/types'
 import { cn } from '@/lib/utils'
 import useTaskStore from '@/stores/useTaskStore'
@@ -51,7 +51,7 @@ type NodeItemProps = {
   node: Node
   selected: boolean
   snapToGrid?: boolean
-  isPanMode: boolean
+  activeTool: string
   taskProgress: { total: number; completed: number }
   onSelect: () => void
   onMoveStart: () => void
@@ -72,7 +72,7 @@ export default function NodeItem({
   node,
   selected,
   snapToGrid,
-  isPanMode,
+  activeTool,
   taskProgress,
   onSelect,
   onMoveStart,
@@ -90,6 +90,7 @@ export default function NodeItem({
 }: NodeItemProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const textRef = useRef<HTMLDivElement>(null)
 
   const [tasks, setTasks] = useTaskStore()
   const [funnels] = useFunnelStore()
@@ -100,6 +101,17 @@ export default function NodeItem({
   const linkedTasks = tasks.filter(
     (t) => t.nodeId === node.id || node.data.linkedTaskIds?.includes(t.id),
   )
+
+  const isPanMode = activeTool === 'Pan'
+
+  useEffect(() => {
+    if (node.type === 'FloatingText' && node.data.name === 'New Text') {
+      if (textRef.current) {
+        textRef.current.focus()
+        document.execCommand('selectAll', false, null)
+      }
+    }
+  }, [node.type])
 
   const handleToggleTask = (task: Task) => {
     const newStatus = task.status === 'Concluído' ? 'A Fazer' : 'Concluído'
@@ -169,9 +181,7 @@ export default function NodeItem({
     const handlePointerUp = (upEv: PointerEvent) => {
       try {
         target.releasePointerCapture(upEv.pointerId)
-      } catch (err) {
-        /* ignore */
-      }
+      } catch (err) {}
       setIsDragging(false)
       document.body.style.userSelect = ''
       let finalX = initialX + (upEv.clientX - startX) / scale
@@ -196,6 +206,150 @@ export default function NodeItem({
     if (resType && resId) {
       onDropResource(resType, resId)
     }
+  }
+
+  if (node.type === 'FloatingText') {
+    return (
+      <div
+        className={cn(
+          'absolute top-0 left-0 pointer-events-auto min-w-[50px] p-2 text-slate-800 z-10 transition-all group outline-none',
+          selected && 'ring-2 ring-primary/20 bg-primary/5 rounded-md',
+          isDragging
+            ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing'
+            : isPanMode
+              ? 'cursor-grab'
+              : 'cursor-pointer',
+        )}
+        style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
+        onPointerDown={handlePointerDown}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        data-node-id={node.id}
+      >
+        <div
+          ref={textRef}
+          className="font-medium text-[15px] whitespace-pre-wrap outline-none cursor-text min-h-[24px] min-w-[20px]"
+          contentEditable
+          suppressContentEditableWarning
+          onPointerDown={(e) => {
+            if (!isPanMode) e.stopPropagation()
+          }}
+          onBlur={(e) => {
+            const val = e.currentTarget.textContent || 'Text'
+            onTextChange(val)
+          }}
+        >
+          {node.data.name}
+        </div>
+
+        {!isPanMode && (
+          <div
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon opacity-0 group-hover:opacity-100 transition-opacity"
+            onPointerDown={(e) => {
+              e.stopPropagation()
+              onEdgeDragStart(node.id, e)
+            }}
+          >
+            <div className="w-3 h-3 rounded-full bg-white border-2 border-slate-200 group-hover/port:border-purple-500 group-hover/port:scale-125 transition-all shadow-sm" />
+          </div>
+        )}
+
+        <div
+          className={cn(
+            'absolute -top-3 -right-3 flex items-center gap-1.5 z-20 transition-opacity',
+            selected || isHovered
+              ? 'opacity-100'
+              : 'opacity-0 pointer-events-none',
+          )}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete()
+                }}
+                className="interactive-icon w-7 h-7 bg-white border border-slate-100 rounded-full flex items-center justify-center text-red-400 hover:text-red-600 shadow-sm transition-transform hover:scale-110"
+              >
+                <Trash2 size={13} strokeWidth={2.5} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Excluir</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+    )
+  }
+
+  if (['Square', 'Diamond', 'Circle'].includes(node.type)) {
+    return (
+      <div
+        className={cn(
+          'absolute top-0 left-0 pointer-events-auto w-[120px] h-[120px] flex items-center justify-center bg-white border-2 border-slate-200 z-10 transition-all group text-slate-700',
+          selected && 'border-purple-400 ring-4 ring-purple-100 shadow-md',
+          isDragging
+            ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing shadow-lg'
+            : isPanMode
+              ? 'cursor-grab'
+              : 'cursor-pointer',
+          node.type === 'Circle' && 'rounded-full',
+          node.type === 'Square' && 'rounded-2xl',
+        )}
+        style={{
+          transform: `translate3d(${node.x}px, ${node.y}px, 0) ${node.type === 'Diamond' ? 'rotate(45deg)' : ''}`,
+        }}
+        onPointerDown={handlePointerDown}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        data-node-id={node.id}
+      >
+        <div
+          className="absolute -top-3 -right-3 flex items-center gap-1.5 z-20"
+          style={{
+            transform:
+              node.type === 'Diamond'
+                ? 'rotate(-45deg) translate(8px, -8px)'
+                : 'none',
+          }}
+        >
+          <div
+            className={cn(
+              'flex items-center gap-1.5 transition-opacity',
+              selected || isHovered
+                ? 'opacity-100'
+                : 'opacity-0 pointer-events-none',
+            )}
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete()
+                  }}
+                  className="interactive-icon w-7 h-7 bg-white border border-slate-100 rounded-full flex items-center justify-center text-red-400 hover:text-red-600 shadow-sm transition-transform hover:scale-110"
+                >
+                  <Trash2 size={13} strokeWidth={2.5} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Excluir</TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        {!isPanMode && (
+          <div
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon opacity-0 group-hover:opacity-100 transition-opacity"
+            onPointerDown={(e) => {
+              e.stopPropagation()
+              onEdgeDragStart(node.id, e)
+            }}
+          >
+            <div className="w-3 h-3 rounded-full bg-white border-2 border-slate-200 group-hover/port:border-purple-500 group-hover/port:scale-125 transition-all shadow-sm" />
+          </div>
+        )}
+      </div>
+    )
   }
 
   if (node.type === 'Text') {
@@ -260,6 +414,18 @@ export default function NodeItem({
           alt="Canvas"
           className="w-full h-auto object-cover pointer-events-none select-none"
         />
+
+        {!isPanMode && (
+          <div
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon opacity-0 group-hover:opacity-100 transition-opacity"
+            onPointerDown={(e) => {
+              e.stopPropagation()
+              onEdgeDragStart(node.id, e)
+            }}
+          >
+            <div className="w-3 h-3 rounded-full bg-white border-2 border-slate-200 group-hover/port:border-purple-500 group-hover/port:scale-125 transition-all shadow-sm" />
+          </div>
+        )}
       </div>
     )
   }
@@ -306,7 +472,6 @@ export default function NodeItem({
       onDrop={handleDrop}
       data-node-id={node.id}
     >
-      {/* Top Left Icons */}
       <div className="absolute -top-3.5 left-4 flex items-center gap-1.5 z-20">
         {(node.data.linkedDocumentIds?.length ?? 0) > 0 && (
           <Tooltip>
@@ -342,7 +507,6 @@ export default function NodeItem({
         )}
       </div>
 
-      {/* Top Right Icons */}
       <div className="absolute -top-3.5 right-4 flex items-center gap-1.5 z-20">
         <div
           className={cn(
@@ -475,7 +639,6 @@ export default function NodeItem({
         </div>
       </div>
 
-      {/* Embedded Task List */}
       {node.data.isTaskMode && (
         <div className="mt-2 flex flex-col gap-1.5">
           {linkedTasks.length > 0 && (

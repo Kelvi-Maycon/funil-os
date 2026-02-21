@@ -25,7 +25,16 @@ export type Node = {
   y: number
   data: NodeData
 }
-export type Edge = { id: string; source: string; target: string }
+export type Edge = {
+  id: string
+  source: string
+  target: string
+  style?: {
+    stroke?: string
+    strokeWidth?: number
+    strokeDasharray?: string
+  }
+}
 export type FunnelFolder = {
   id: string
   name: string

@@ -8,16 +8,18 @@ import { NodeSettingsModal } from './NodeSettingsModal'
 import {
   Plus,
   Minus,
-  Maximize,
   Map,
   Grid,
   Edit2,
   Image as ImageIcon,
-  FileText,
   MousePointer2,
   Hand,
   Type,
   ArrowLeft,
+  Square,
+  Diamond,
+  Circle,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,6 +33,24 @@ import useDocumentStore from '@/stores/useDocumentStore'
 import useAssetStore from '@/stores/useAssetStore'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
+
+const getRightPortCoords = (node: Node, x: number, y: number) => {
+  if (['Square', 'Diamond', 'Circle'].includes(node.type))
+    return { x: x + 120, y: y + 60 }
+  if (node.type === 'FloatingText') return { x: x + 150, y: y + 20 }
+  if (node.type === 'Image') return { x: x + 300, y: y + 100 }
+  if (node.type === 'Text') return { x: x + 150, y: y + 30 }
+  return { x: x + 260, y: y + 44 }
+}
+
+const getLeftPortCoords = (node: Node, x: number, y: number) => {
+  if (['Square', 'Diamond', 'Circle'].includes(node.type))
+    return { x, y: y + 60 }
+  if (node.type === 'FloatingText') return { x, y: y + 20 }
+  if (node.type === 'Image') return { x, y: y + 100 }
+  if (node.type === 'Text') return { x, y: y + 30 }
+  return { x, y: y + 44 }
+}
 
 export default function CanvasBoard({
   funnel,
@@ -52,6 +72,11 @@ export default function CanvasBoard({
 
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null)
+  const [edgeMenu, setEdgeMenu] = useState<{
+    id: string
+    x: number
+    y: number
+  } | null>(null)
   const [rightPanelState, setRightPanelState] = useState<{
     nodeId: string
     tab: string
@@ -61,7 +86,9 @@ export default function CanvasBoard({
 
   const [transform, setTransform] = useState({ x: 400, y: 150, scale: 1 })
   const [isPanning, setIsPanning] = useState(false)
-  const [isPanMode, setIsPanMode] = useState(false)
+  const [activeTool, setActiveTool] = useState<
+    'Select' | 'Pan' | 'Square' | 'Diamond' | 'Circle'
+  >('Select')
   const [showMinimap, setShowMinimap] = useState(false)
   const [snapToGrid, setSnapToGrid] = useState(true)
   const [draggedNode, setDraggedNode] = useState<{
@@ -94,6 +121,37 @@ export default function CanvasBoard({
       }
     }
   }, [targetNodeId, funnel.nodes, searchParams, setSearchParams])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable
+      )
+        return
+      switch (e.key.toLowerCase()) {
+        case '1':
+        case 'v':
+          setActiveTool('Select')
+          break
+        case '2':
+          setActiveTool('Square')
+          break
+        case '3':
+          setActiveTool('Diamond')
+          break
+        case '4':
+          setActiveTool('Circle')
+          break
+        case 'h':
+          setActiveTool('Pan')
+          break
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -166,7 +224,7 @@ export default function CanvasBoard({
 
   const handlePanStart = (e: React.PointerEvent) => {
     if (
-      isPanMode ||
+      activeTool === 'Pan' ||
       e.button === 1 ||
       e.target === boardRef.current ||
       (e.target as HTMLElement).classList.contains('canvas-container') ||
@@ -195,9 +253,7 @@ export default function CanvasBoard({
       setIsPanning(false)
       try {
         ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
-      } catch (err) {
-        /* ignore */
-      }
+      } catch (err) {}
       document.body.style.userSelect = ''
     }
   }
@@ -340,36 +396,54 @@ export default function CanvasBoard({
               ? 'linkedTaskIds'
               : 'linkedAssetIds'
         const currentIds = (n.data[key as keyof NodeData] as string[]) || []
-        if (!currentIds.includes(id)) {
+        if (!currentIds.includes(id))
           return { ...n, data: { ...n.data, [key]: [...currentIds, id] } }
-        }
       }
       return n
     })
     onChange({ ...funnel, nodes: updatedNodes })
 
-    if (type === 'document') {
+    if (type === 'document')
       setDocs(
         docs.map((d) =>
           d.id === id ? { ...d, funnelId: funnel.id, nodeId } : d,
         ),
       )
-    } else if (type === 'task') {
+    else if (type === 'task')
       setTasks(
         tasks.map((t) =>
           t.id === id ? { ...t, funnelId: funnel.id, nodeId } : t,
         ),
       )
-    } else if (type === 'asset') {
+    else if (type === 'asset')
       setAssets(
         assets.map((a) =>
           a.id === id ? { ...a, funnelId: funnel.id, nodeId } : a,
         ),
       )
-    }
+  }
+
+  const updateEdgeStyle = (
+    edgeId: string,
+    styleUpdates: Partial<Edge['style']>,
+  ) => {
+    onChange({
+      ...funnel,
+      edges: funnel.edges.map((e) =>
+        e.id === edgeId ? { ...e, style: { ...e.style, ...styleUpdates } } : e,
+      ),
+    })
   }
 
   const rightOffset = rightPanelState ? 'right-[520px]' : 'right-6'
+  const canvasTools = [
+    { id: 'Select', icon: MousePointer2, label: 'Select (1)', key: '1' },
+    { id: 'Pan', icon: Hand, label: 'Pan (H)', key: 'H' },
+    { id: 'divider' },
+    { id: 'Square', icon: Square, label: 'Square (2)', key: '2' },
+    { id: 'Diamond', icon: Diamond, label: 'Diamond (3)', key: '3' },
+    { id: 'Circle', icon: Circle, label: 'Circle (4)', key: '4' },
+  ]
 
   return (
     <div className="flex-1 flex relative overflow-hidden bg-[#f8fafc]">
@@ -401,42 +475,35 @@ export default function CanvasBoard({
       )}
 
       <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center p-1.5 bg-white/90 backdrop-blur-md rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-200 z-30 gap-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                'w-10 h-10 rounded-full transition-all',
-                !isPanMode
-                  ? 'bg-purple-100 text-purple-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700',
-              )}
-              onClick={() => setIsPanMode(false)}
-            >
-              <MousePointer2 size={18} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Select (V)</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                'w-10 h-10 rounded-full transition-all',
-                isPanMode
-                  ? 'bg-purple-100 text-purple-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700',
-              )}
-              onClick={() => setIsPanMode(true)}
-            >
-              <Hand size={18} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Pan (H)</TooltipContent>
-        </Tooltip>
+        {canvasTools.map((t) => {
+          if (t.id === 'divider')
+            return <div key={t.id} className="w-px h-6 bg-slate-200 mx-1" />
+          return (
+            <Tooltip key={t.id}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    'w-10 h-10 rounded-full transition-all relative',
+                    activeTool === t.id
+                      ? 'bg-purple-100 text-purple-700 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100',
+                  )}
+                  onClick={() => setActiveTool(t.id as any)}
+                >
+                  <t.icon size={18} />
+                  {t.key && t.id !== 'Pan' && (
+                    <span className="absolute bottom-1 right-1.5 text-[9px] font-bold opacity-60">
+                      {t.key}
+                    </span>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t.label}</TooltipContent>
+            </Tooltip>
+          )
+        })}
         <div className="w-px h-6 bg-slate-200 mx-1" />
         <Tooltip>
           <TooltipTrigger asChild>
@@ -449,7 +516,7 @@ export default function CanvasBoard({
               <Type size={18} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Add Text</TooltipContent>
+          <TooltipContent>Add Note</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -590,11 +657,176 @@ export default function CanvasBoard({
         </div>
       )}
 
+      {edgeMenu &&
+        (() => {
+          const currentEdge = funnel.edges.find((e) => e.id === edgeMenu.id)
+          if (!currentEdge) return null
+          return (
+            <div
+              className="absolute z-50 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-slate-200 p-4 w-[280px] flex flex-col gap-4 animate-in fade-in zoom-in-95"
+              style={{ left: edgeMenu.x, top: edgeMenu.y }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center">
+                <h4 className="text-[13px] font-bold text-slate-800 tracking-wide uppercase">
+                  Edge Style
+                </h4>
+                <button
+                  onClick={() => setEdgeMenu(null)}
+                  className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-1 rounded-full transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  Stroke style
+                </label>
+                <div className="flex gap-1.5">
+                  <button
+                    className={cn(
+                      'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
+                      currentEdge.style?.strokeDasharray === 'none' ||
+                        !currentEdge.style?.strokeDasharray
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
+                    )}
+                    onClick={() =>
+                      updateEdgeStyle(edgeMenu.id, { strokeDasharray: 'none' })
+                    }
+                  >
+                    <svg width="24" height="2" className="overflow-visible">
+                      <line
+                        x1="0"
+                        y1="1"
+                        x2="24"
+                        y2="1"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    className={cn(
+                      'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
+                      currentEdge.style?.strokeDasharray === '8 8'
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
+                    )}
+                    onClick={() =>
+                      updateEdgeStyle(edgeMenu.id, { strokeDasharray: '8 8' })
+                    }
+                  >
+                    <svg width="24" height="2" className="overflow-visible">
+                      <line
+                        x1="0"
+                        y1="1"
+                        x2="24"
+                        y2="1"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeDasharray="6 6"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    className={cn(
+                      'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
+                      currentEdge.style?.strokeDasharray === '4 4'
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
+                    )}
+                    onClick={() =>
+                      updateEdgeStyle(edgeMenu.id, { strokeDasharray: '4 4' })
+                    }
+                  >
+                    <svg width="24" height="2" className="overflow-visible">
+                      <line
+                        x1="0"
+                        y1="1"
+                        x2="24"
+                        y2="1"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeDasharray="2 4"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  Thickness
+                </label>
+                <div className="flex gap-3 items-center px-1">
+                  <input
+                    type="range"
+                    min="1"
+                    max="8"
+                    step="1"
+                    className="flex-1 accent-purple-500 h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
+                    value={currentEdge.style?.strokeWidth || 2}
+                    onChange={(e) =>
+                      updateEdgeStyle(edgeMenu.id, {
+                        strokeWidth: parseInt(e.target.value),
+                      })
+                    }
+                  />
+                  <span className="text-[13px] font-medium text-slate-600 w-4 text-center">
+                    {currentEdge.style?.strokeWidth || 2}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  Color
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    '#cbd5e1',
+                    '#a855f7',
+                    '#3b82f6',
+                    '#10b981',
+                    '#f59e0b',
+                    '#ef4444',
+                    '#1e293b',
+                  ].map((c) => (
+                    <button
+                      key={c}
+                      className={cn(
+                        'w-7 h-7 rounded-full border-2 transition-transform',
+                        currentEdge.style?.stroke === c ||
+                          (c === '#cbd5e1' && !currentEdge.style?.stroke)
+                          ? 'border-slate-800 scale-110'
+                          : 'border-transparent hover:scale-110',
+                      )}
+                      style={{ backgroundColor: c }}
+                      onClick={() =>
+                        updateEdgeStyle(edgeMenu.id, { stroke: c })
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
       <div
         ref={boardRef}
         className={cn(
           'flex-1 relative canvas-container overflow-hidden',
-          isPanMode ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : '',
+          activeTool === 'Pan'
+            ? isPanning
+              ? 'cursor-grabbing'
+              : 'cursor-grab'
+            : activeTool !== 'Select'
+              ? 'cursor-crosshair'
+              : '',
         )}
         style={{
           backgroundPosition: `${transform.x}px ${transform.y}px`,
@@ -607,6 +839,31 @@ export default function CanvasBoard({
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
         onClick={(e) => {
+          if (['Square', 'Diamond', 'Circle'].includes(activeTool)) {
+            const rect = boardRef.current?.getBoundingClientRect()
+            if (!rect) return
+            let x = (e.clientX - rect.left - transform.x) / transform.scale - 60
+            let y = (e.clientY - rect.top - transform.y) / transform.scale - 60
+            if (snapToGrid) {
+              x = Math.round(x / 28) * 28
+              y = Math.round(y / 28) * 28
+            }
+            onChange({
+              ...funnel,
+              nodes: [
+                ...funnel.nodes,
+                {
+                  id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  type: activeTool,
+                  x,
+                  y,
+                  data: { name: '', status: '', subtitle: '' },
+                },
+              ],
+            })
+            setActiveTool('Select')
+            return
+          }
           if (
             e.target === boardRef.current ||
             (e.target as HTMLElement).classList.contains('canvas-container') ||
@@ -614,6 +871,38 @@ export default function CanvasBoard({
           ) {
             setSelectedNode(null)
             setSelectedEdge(null)
+            setEdgeMenu(null)
+          }
+        }}
+        onDoubleClick={(e) => {
+          const target = e.target as HTMLElement
+          const isBg =
+            target === boardRef.current ||
+            target.classList.contains('canvas-container') ||
+            target.tagName === 'svg'
+
+          if (isBg && activeTool === 'Select') {
+            const rect = boardRef.current?.getBoundingClientRect()
+            if (!rect) return
+            let x = (e.clientX - rect.left - transform.x) / transform.scale - 50
+            let y = (e.clientY - rect.top - transform.y) / transform.scale - 15
+            if (snapToGrid) {
+              x = Math.round(x / 28) * 28
+              y = Math.round(y / 28) * 28
+            }
+            onChange({
+              ...funnel,
+              nodes: [
+                ...funnel.nodes,
+                {
+                  id: `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  type: 'FloatingText',
+                  x,
+                  y,
+                  data: { name: 'New Text', status: '', subtitle: '' },
+                },
+              ],
+            })
           }
         }}
       >
@@ -630,30 +919,51 @@ export default function CanvasBoard({
               const targetNode = funnel.nodes.find((n) => n.id === e.target)
               if (!sourceNode || !targetNode) return null
               const isSelected = selectedEdge === e.id
+
               const sX =
-                (draggedNode?.id === e.source ? draggedNode.x : sourceNode.x) +
-                260
+                draggedNode?.id === e.source ? draggedNode.x : sourceNode.x
               const sY =
-                (draggedNode?.id === e.source ? draggedNode.y : sourceNode.y) +
-                44
+                draggedNode?.id === e.source ? draggedNode.y : sourceNode.y
+              const sourceCoords = getRightPortCoords(sourceNode, sX, sY)
+
               const tX =
                 draggedNode?.id === e.target ? draggedNode.x : targetNode.x
               const tY =
-                (draggedNode?.id === e.target ? draggedNode.y : targetNode.y) +
-                44
-              const d = `M ${sX} ${sY} C ${sX + 50} ${sY}, ${tX - 50} ${tY}, ${tX} ${tY}`
+                draggedNode?.id === e.target ? draggedNode.y : targetNode.y
+              const targetCoords = getLeftPortCoords(targetNode, tX, tY)
+
+              const d = `M ${sourceCoords.x} ${sourceCoords.y} C ${sourceCoords.x + 50} ${sourceCoords.y}, ${targetCoords.x - 50} ${targetCoords.y}, ${targetCoords.x} ${targetCoords.y}`
+
+              const strokeColor =
+                e.style?.stroke || (isSelected ? '#a855f7' : '#cbd5e1')
+              const strokeWidth = e.style?.strokeWidth || (isSelected ? 3 : 2)
+              const strokeDasharray = e.style?.strokeDasharray || 'none'
+
               return (
                 <path
                   key={e.id}
                   d={d}
-                  stroke={isSelected ? '#a855f7' : '#cbd5e1'}
-                  strokeWidth={isSelected ? '3' : '2'}
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={strokeDasharray}
                   fill="none"
                   className="transition-colors cursor-pointer hover:stroke-slate-400 pointer-events-auto"
                   onClick={(ev) => {
                     ev.stopPropagation()
                     setSelectedEdge(e.id)
                     setSelectedNode(null)
+                    setEdgeMenu(null)
+                  }}
+                  onDoubleClick={(ev) => {
+                    ev.stopPropagation()
+                    const rect = boardRef.current?.getBoundingClientRect()
+                    if (rect) {
+                      setEdgeMenu({
+                        id: e.id,
+                        x: ev.clientX - rect.left,
+                        y: ev.clientY - rect.top,
+                      })
+                    }
                   }}
                 />
               )
@@ -664,11 +974,10 @@ export default function CanvasBoard({
                   (n) => n.id === drawingEdge.source,
                 )
                 if (!sNode) return null
-                const sX = sNode.x + 260,
-                  sY = sNode.y + 44
+                const sourceCoords = getRightPortCoords(sNode, sNode.x, sNode.y)
                 return (
                   <path
-                    d={`M ${sX} ${sY} C ${sX + 50} ${sY}, ${drawingEdge.currentX - 50} ${drawingEdge.currentY}, ${drawingEdge.currentX} ${drawingEdge.currentY}`}
+                    d={`M ${sourceCoords.x} ${sourceCoords.y} C ${sourceCoords.x + 50} ${sourceCoords.y}, ${drawingEdge.currentX - 50} ${drawingEdge.currentY}, ${drawingEdge.currentX} ${drawingEdge.currentY}`}
                     stroke="#a855f7"
                     strokeWidth="2"
                     strokeDasharray="4 4"
@@ -706,11 +1015,12 @@ export default function CanvasBoard({
                   }
                   selected={selectedNode === n.id}
                   snapToGrid={snapToGrid}
-                  isPanMode={isPanMode}
+                  activeTool={activeTool}
                   taskProgress={taskProgress}
                   onSelect={() => {
                     setSelectedNode(n.id)
                     setSelectedEdge(null)
+                    setEdgeMenu(null)
                   }}
                   onMoveStart={() =>
                     setDraggedNode({ id: n.id, x: n.x, y: n.y })
