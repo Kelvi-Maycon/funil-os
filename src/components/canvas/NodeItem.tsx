@@ -24,6 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const icons: Record<string, any> = {
   Ad: Megaphone,
@@ -89,7 +90,8 @@ export default function NodeItem({
     if (
       isPanMode ||
       (e.target as HTMLElement).closest('button') ||
-      (e.target as HTMLElement).closest('.interactive-icon')
+      (e.target as HTMLElement).closest('.interactive-icon') ||
+      (e.target as HTMLElement).closest('[role="checkbox"]')
     )
       return
     e.stopPropagation()
@@ -224,20 +226,20 @@ export default function NodeItem({
   return (
     <div
       className={cn(
-        'absolute top-0 left-0 pointer-events-auto w-[260px] rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border p-5 z-10 flex flex-col gap-2 group select-none transition-all',
+        'absolute top-0 left-0 pointer-events-auto w-[260px] rounded-[1.25rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border p-5 z-10 flex flex-col gap-2 group select-none transition-all',
         (selected || isHovered) &&
           'shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-4 ring-slate-50',
         isDragging &&
           'opacity-90 scale-[1.02] z-50 shadow-[0_12px_40px_rgba(0,0,0,0.1)] ring-4 ring-primary/10 border-primary/20',
         node.data.isTaskMode && node.data.isCompleted
-          ? 'bg-green-50 border-green-200'
+          ? 'bg-[#ecfdf5] border-[#bbf7d0]'
           : 'bg-white border-slate-100',
       )}
       style={{
         transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
         transition: isDragging
           ? 'none'
-          : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s, opacity 0.2s',
+          : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s, opacity 0.2s, background-color 0.3s',
         cursor: isPanMode ? 'grab' : isDragging ? 'grabbing' : 'pointer',
       }}
       onPointerDown={handlePointerDown}
@@ -256,18 +258,18 @@ export default function NodeItem({
       onDrop={handleDrop}
       data-node-id={node.id}
     >
-      <div className="absolute -top-3 -left-3 flex gap-2 z-20">
+      <div className="absolute -top-3 -left-3 flex gap-1.5 z-20">
         {(node.data.linkedDocumentIds?.length ?? 0) > 0 && (
           <Tooltip>
             <TooltipTrigger asChild>
               <div
-                className="interactive-icon w-8 h-8 rounded-full bg-blue-50 border-2 border-white text-blue-600 flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                className="interactive-icon w-7 h-7 rounded-full bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform"
                 onClick={(e) => {
                   e.stopPropagation()
                   onOpenRightPanel('content')
                 }}
               >
-                <FileText size={14} strokeWidth={2.5} />
+                <FileText size={13} strokeWidth={2.5} />
               </div>
             </TooltipTrigger>
             <TooltipContent>Ver Documentos</TooltipContent>
@@ -277,13 +279,13 @@ export default function NodeItem({
           <Tooltip>
             <TooltipTrigger asChild>
               <div
-                className="interactive-icon w-8 h-8 rounded-full bg-purple-50 border-2 border-white text-purple-600 flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                className="interactive-icon w-7 h-7 rounded-full bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform"
                 onClick={(e) => {
                   e.stopPropagation()
                   onOpenRightPanel('assets')
                 }}
               >
-                <ImageIcon size={14} strokeWidth={2.5} />
+                <ImageIcon size={13} strokeWidth={2.5} />
               </div>
             </TooltipTrigger>
             <TooltipContent>Ver Assets</TooltipContent>
@@ -329,44 +331,52 @@ export default function NodeItem({
             <TooltipContent>Progresso das Tarefas</TooltipContent>
           </Tooltip>
         )}
-        {node.data.isTaskMode && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                className={cn(
-                  'interactive-icon w-8 h-8 rounded-full shadow-sm flex items-center justify-center border-2 cursor-pointer hover:scale-110 transition-all',
-                  node.data.isCompleted
-                    ? 'bg-green-500 border-white text-white'
-                    : 'bg-white border-slate-200 text-slate-300 hover:text-slate-400',
-                )}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onToggleComplete()
-                }}
-              >
-                <Check size={16} strokeWidth={3} />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              {node.data.isCompleted ? 'Concluído' : 'Marcar como concluído'}
-            </TooltipContent>
-          </Tooltip>
-        )}
       </div>
 
-      <div className="flex items-center gap-2 text-slate-500 mb-1 mt-1">
-        <Icon size={16} strokeWidth={1.5} />
-        <span className="text-[13px] font-medium tracking-wide">
+      <div className="flex items-center gap-2 text-slate-500 mb-0.5 mt-0.5">
+        <Icon size={15} strokeWidth={2} className="text-slate-400" />
+        <span className="text-[13px] font-semibold tracking-wide text-slate-600">
           {node.type}
         </span>
       </div>
+
       <div className="flex flex-col">
-        <h4 className="font-semibold text-slate-800 text-[15px] truncate">
-          {node.data.name}
-        </h4>
-        <span className="text-[13px] text-slate-400 mt-0.5 truncate">
-          {node.data.subtitle || '+1 filter'}
-        </span>
+        <div className="flex items-start gap-2.5">
+          {node.data.isTaskMode && (
+            <div
+              className="mt-0.5"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleComplete()
+              }}
+            >
+              <Checkbox
+                checked={node.data.isCompleted}
+                className={cn(
+                  'rounded-[4px] border-slate-300 w-4 h-4 shadow-none',
+                  node.data.isCompleted &&
+                    'data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500',
+                )}
+              />
+            </div>
+          )}
+          <div className="flex flex-col min-w-0 flex-1">
+            <h4
+              className={cn(
+                'font-bold text-slate-800 text-[15px] truncate leading-tight',
+                node.data.isTaskMode &&
+                  node.data.isCompleted &&
+                  'text-slate-600 line-through decoration-slate-300',
+              )}
+            >
+              {node.data.name}
+            </h4>
+            <span className="text-[13px] text-slate-400 mt-1 truncate font-medium">
+              {node.data.subtitle || '+1 filter'}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div
