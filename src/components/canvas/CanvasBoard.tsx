@@ -683,11 +683,19 @@ export default function CanvasBoard({
               const nodeTasks = tasks.filter((t) =>
                 n.data.linkedTaskIds?.includes(t.id),
               )
-              const taskProgress = {
-                total: nodeTasks.length,
-                completed: nodeTasks.filter((t) => t.status === 'Concluído')
-                  .length,
-              }
+              let total = 0
+              let completed = 0
+              nodeTasks.forEach((t) => {
+                if (t.subtasks && t.subtasks.length > 0) {
+                  total += t.subtasks.length
+                  completed += t.subtasks.filter((s) => s.isCompleted).length
+                } else {
+                  total += 1
+                  if (t.status === 'Concluído') completed += 1
+                }
+              })
+              const taskProgress = { total, completed }
+
               return (
                 <NodeItem
                   key={n.id}

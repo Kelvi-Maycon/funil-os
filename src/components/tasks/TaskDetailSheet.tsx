@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Sheet,
   SheetContent,
@@ -27,6 +28,7 @@ import {
   CheckSquare,
   MessageSquare,
   Folder,
+  Network,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import useProjectStore from '@/stores/useProjectStore'
@@ -42,6 +44,7 @@ export default function TaskDetailSheet({
 }) {
   const [localTask, setLocalTask] = useState<Task | null>(null)
   const [projects] = useProjectStore()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (task) setLocalTask(task)
@@ -96,13 +99,28 @@ export default function TaskDetailSheet({
   return (
     <Sheet open={!!task} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col gap-0 border-l">
-        <SheetHeader className="px-6 py-4 border-b">
+        <SheetHeader className="px-6 py-4 border-b flex flex-row items-center justify-between gap-4">
           <SheetTitle className="sr-only">Task Details</SheetTitle>
           <Input
             value={localTask.title}
             onChange={(e) => handleUpdate({ title: e.target.value })}
-            className="text-xl font-bold border-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none -ml-2"
+            className="text-xl font-bold border-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none -ml-2 flex-1"
           />
+          {localTask.funnelId && localTask.nodeId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onClose()
+                navigate(
+                  `/canvas/${localTask.funnelId}?nodeId=${localTask.nodeId}`,
+                )
+              }}
+              className="text-purple-600 border-purple-200 bg-purple-50 hover:bg-purple-100 shrink-0 mr-6"
+            >
+              <Network size={14} className="mr-1.5" /> Ver no Canvas
+            </Button>
+          )}
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">

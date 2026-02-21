@@ -194,6 +194,12 @@ export default function NodeItem({
         )}
         style={{ transform: `translate3d(${node.x}px, ${node.y}px, 0)` }}
         onPointerDown={handlePointerDown}
+        onDoubleClick={(e) => {
+          if (!isPanMode) {
+            e.stopPropagation()
+            onOpenRightPanel('assets')
+          }
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         data-node-id={node.id}
@@ -235,6 +241,12 @@ export default function NodeItem({
         cursor: isPanMode ? 'grab' : isDragging ? 'grabbing' : 'pointer',
       }}
       onPointerDown={handlePointerDown}
+      onDoubleClick={(e) => {
+        if (!isPanMode) {
+          e.stopPropagation()
+          onOpenRightPanel('details')
+        }
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onDragOver={(e) => {
