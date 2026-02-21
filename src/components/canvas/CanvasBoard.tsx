@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Funnel, Node, Edge, NodeData, Asset } from '@/types'
 import BlockPalette from './BlockPalette'
@@ -59,6 +59,25 @@ const getLeftPortCoords = (node: Node, x: number, y: number) => {
   return { x, y: y + 44 }
 }
 
+const getApproxBounds = (n: Node) => {
+  let w = n.width || 260
+  let h = n.height || 120
+  if (n.type === 'FloatingText') {
+    w = 150
+    h = 40
+  } else if (n.type === 'Text') {
+    w = 200
+    h = 80
+  } else if (n.type === 'Image') {
+    w = 300
+    h = 200
+  } else if (['Square', 'Diamond', 'Circle'].includes(n.type)) {
+    w = n.width || 120
+    h = n.height || 120
+  }
+  return { x: n.x, y: n.y, w, h }
+}
+
 export default function CanvasBoard({
   funnel,
   onChange,
@@ -77,7 +96,7 @@ export default function CanvasBoard({
   const [assets, setAssets] = useAssetStore()
   const { toast } = useToast()
 
-  const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [selectedNodes, setSelectedNodes] = useState<string[]>([])
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null)
   const [rightPanelState, setRightPanelState] = useState<{
     nodeId: string
@@ -93,7 +112,13 @@ export default function CanvasBoard({
   >('Select')
   const [showMinimap, setShowMinimap] = useState(false)
   const [snapToGrid, setSnapToGrid] = useState(false)
-  const [draggedNode, setDraggedNode] = useState<{
+
+  const [dragState, setDragState] = useState<{
+    isDragging: boolean
+    dx: number
+    dy: number
+  } | null>(null)
+  const [resizingNode, setResizingNode] = useState<{
     id: string
     x: number
     y: number
@@ -112,6 +137,13 @@ export default function CanvasBoard({
     currentX: number
     currentY: number
   } | null>(null)
+  const [selectionBox, setSelectionBox] = useState<{
+    startX: number
+    startY: number
+    currentX: number
+    currentY: number
+  } | null>(null)
+
   const lastPan = useRef({ x: 0, y: 0 })
 
   const targetNodeId = searchParams.get('nodeId')
@@ -125,13 +157,43 @@ export default function CanvasBoard({
           y: rect.height / 2 - node.y * 1.5 - 60,
           scale: 1.5,
         })
-        setSelectedNode(node.id)
+        setSelectedNodes([node.id])
         setRightPanelState({ nodeId: node.id, tab: 'details' })
         searchParams.delete('nodeId')
         setSearchParams(searchParams, { replace: true })
       }
     }
   }, [targetNodeId, funnel.nodes, searchParams, setSearchParams])
+
+  const handleGroupSelected = useCallback(() => {
+    if (selectedNodes.length < 2) return
+    const groupId = `g_${Date.now()}`
+    onChange({
+      ...funnel,
+      nodes: funnel.nodes.map((n) =>
+        selectedNodes.includes(n.id) ? { ...n, groupId } : n,
+      ),
+    })
+    toast({ title: 'Elementos agrupados.' })
+  }, [funnel, selectedNodes, onChange, toast])
+
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedNodes.length === 0) return
+    onChange({
+      ...funnel,
+      nodes: funnel.nodes.filter((n) => !selectedNodes.includes(n.id)),
+      edges: funnel.edges.filter(
+        (e) =>
+          !selectedNodes.includes(e.source) &&
+          !selectedNodes.includes(e.target),
+      ),
+    })
+    setSelectedNodes([])
+    if (rightPanelState && selectedNodes.includes(rightPanelState.nodeId))
+      setRightPanelState(null)
+    if (settingsNodeId && selectedNodes.includes(settingsNodeId))
+      setSettingsNodeId(null)
+  }, [funnel, selectedNodes, onChange, rightPanelState, settingsNodeId])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -158,11 +220,21 @@ export default function CanvasBoard({
         case 'h':
           setActiveTool('Pan')
           break
+        case 'delete':
+        case 'backspace':
+          handleDeleteSelected()
+          break
+        case 'g':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            handleGroupSelected()
+          }
+          break
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [handleDeleteSelected, handleGroupSelected])
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -195,6 +267,7 @@ export default function CanvasBoard({
             },
           }
           onChange({ ...funnel, nodes: [...funnel.nodes, newNode] })
+          setSelectedNodes([newNode.id])
           toast({ title: 'Imagem colada no canvas!' })
         }
       }
@@ -238,11 +311,11 @@ export default function CanvasBoard({
       e.target === boardRef.current ||
       (e.target as HTMLElement).classList.contains('canvas-container') ||
       (e.target as HTMLElement).tagName === 'svg'
+    const rect = boardRef.current?.getBoundingClientRect()
+    if (!rect) return
 
     if (isCanvasBg) {
       if (['Square', 'Diamond', 'Circle'].includes(activeTool)) {
-        const rect = boardRef.current?.getBoundingClientRect()
-        if (!rect) return
         let x = (e.clientX - rect.left - transform.x) / transform.scale
         let y = (e.clientY - rect.top - transform.y) / transform.scale
         if (snapToGrid) {
@@ -262,8 +335,12 @@ export default function CanvasBoard({
       }
 
       if (activeTool === 'Select') {
-        setSelectedNode(null)
+        setSelectedNodes([])
         setSelectedEdge(null)
+        let x = (e.clientX - rect.left - transform.x) / transform.scale
+        let y = (e.clientY - rect.top - transform.y) / transform.scale
+        setSelectionBox({ startX: x, startY: y, currentX: x, currentY: y })
+        ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
       }
     }
 
@@ -276,9 +353,10 @@ export default function CanvasBoard({
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    const rect = boardRef.current?.getBoundingClientRect()
+    if (!rect) return
+
     if (creatingShape) {
-      const rect = boardRef.current?.getBoundingClientRect()
-      if (!rect) return
       let x = (e.clientX - rect.left - transform.x) / transform.scale
       let y = (e.clientY - rect.top - transform.y) / transform.scale
       if (snapToGrid) {
@@ -288,6 +366,33 @@ export default function CanvasBoard({
       setCreatingShape((prev) =>
         prev ? { ...prev, currentX: x, currentY: y } : null,
       )
+      return
+    }
+
+    if (selectionBox) {
+      let x = (e.clientX - rect.left - transform.x) / transform.scale
+      let y = (e.clientY - rect.top - transform.y) / transform.scale
+      setSelectionBox((prev) =>
+        prev ? { ...prev, currentX: x, currentY: y } : null,
+      )
+
+      const minX = Math.min(selectionBox.startX, x)
+      const maxX = Math.max(selectionBox.startX, x)
+      const minY = Math.min(selectionBox.startY, y)
+      const maxY = Math.max(selectionBox.startY, y)
+
+      const newSelected = funnel.nodes
+        .filter((n) => {
+          const bounds = getApproxBounds(n)
+          return (
+            bounds.x < maxX &&
+            bounds.x + bounds.w > minX &&
+            bounds.y < maxY &&
+            bounds.y + bounds.h > minY
+          )
+        })
+        .map((n) => n.id)
+      setSelectedNodes(newSelected)
       return
     }
 
@@ -332,10 +437,20 @@ export default function CanvasBoard({
             },
           ],
         })
-        setSelectedNode(newNodeId)
+        setSelectedNodes([newNodeId])
       }
       setCreatingShape(null)
       setActiveTool('Select')
+      try {
+        ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+      } catch (err) {
+        /* ignore */
+      }
+      return
+    }
+
+    if (selectionBox) {
+      setSelectionBox(null)
       try {
         ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
       } catch (err) {
@@ -367,12 +482,13 @@ export default function CanvasBoard({
       x = Math.round(x / 28) * 28
       y = Math.round(y / 28) * 28
     }
+    const newNodeId = `n_${Date.now()}`
     onChange({
       ...funnel,
       nodes: [
         ...funnel.nodes,
         {
-          id: `n_${Date.now()}`,
+          id: newNodeId,
           type,
           x,
           y,
@@ -380,6 +496,7 @@ export default function CanvasBoard({
         },
       ],
     })
+    setSelectedNodes([newNodeId])
   }
 
   const handleEdgeDragStart = (nodeId: string, e: React.PointerEvent) => {
@@ -456,24 +573,14 @@ export default function CanvasBoard({
     })
   }
 
-  const handleDeleteNode = (id: string) => {
-    onChange({
-      ...funnel,
-      nodes: funnel.nodes.filter((n) => n.id !== id),
-      edges: funnel.edges.filter((e) => e.source !== id && e.target !== id),
-    })
-    if (rightPanelState?.nodeId === id) setRightPanelState(null)
-    if (settingsNodeId === id) setSettingsNodeId(null)
-    if (selectedNode === id) setSelectedNode(null)
-  }
-
   const handleAddAnnotation = (type: 'Text' | 'Image', name: string) => {
+    const newNodeId = `n_${Date.now()}`
     onChange({
       ...funnel,
       nodes: [
         ...funnel.nodes,
         {
-          id: `n_${Date.now()}`,
+          id: newNodeId,
           type,
           x: -transform.x / transform.scale + 400,
           y: -transform.y / transform.scale + 200,
@@ -482,6 +589,7 @@ export default function CanvasBoard({
         },
       ],
     })
+    setSelectedNodes([newNodeId])
   }
 
   const handleDropResource = (nodeId: string, type: string, id: string) => {
@@ -535,15 +643,31 @@ export default function CanvasBoard({
   }
 
   const updateNodeStyle = (updates: Partial<Node['style']>) => {
-    if (selectedNode) {
+    if (selectedNodes.length > 0) {
       onChange({
         ...funnel,
         nodes: funnel.nodes.map((n) =>
-          n.id === selectedNode
+          selectedNodes.includes(n.id)
             ? { ...n, style: { ...n.style, ...updates } }
             : n,
         ),
       })
+    }
+  }
+
+  const handleNodePointerDown = (id: string, shiftKey: boolean) => {
+    const n = funnel.nodes.find((x) => x.id === id)
+    if (!n) return
+    const groupMembers = n.groupId
+      ? funnel.nodes.filter((x) => x.groupId === n.groupId).map((x) => x.id)
+      : [id]
+    if (!selectedNodes.includes(id)) {
+      if (shiftKey)
+        setSelectedNodes([...new Set([...selectedNodes, ...groupMembers])])
+      else setSelectedNodes(groupMembers)
+      setSelectedEdge(null)
+    } else if (shiftKey) {
+      setSelectedNodes(selectedNodes.filter((x) => !groupMembers.includes(x)))
     }
   }
 
@@ -557,8 +681,29 @@ export default function CanvasBoard({
     { id: 'Circle', icon: Circle, label: 'Circle (4)', key: '4' },
   ]
 
-  const selectedNodeObj = funnel.nodes.find((n) => n.id === selectedNode)
+  const isMultiSelect = selectedNodes.length > 1
+  const selectedNodeObj =
+    selectedNodes.length > 0
+      ? funnel.nodes.find((n) => n.id === selectedNodes[0])
+      : undefined
   const selectedEdgeObj = funnel.edges.find((e) => e.id === selectedEdge)
+
+  const getEffectiveNode = (n: Node | undefined) => {
+    if (!n) return undefined
+    if (resizingNode?.id === n.id) {
+      return {
+        ...n,
+        x: resizingNode.x,
+        y: resizingNode.y,
+        width: resizingNode.width,
+        height: resizingNode.height,
+      }
+    }
+    if (selectedNodes.includes(n.id) && dragState) {
+      return { ...n, x: n.x + dragState.dx, y: n.y + dragState.dy }
+    }
+    return n
+  }
 
   return (
     <div className="flex-1 flex relative overflow-hidden bg-[#f8fafc]">
@@ -783,15 +928,17 @@ export default function CanvasBoard({
         >
           <div className="flex justify-between items-center">
             <h4 className="text-[12px] font-bold text-slate-800 tracking-widest uppercase">
-              {selectedNodeObj
-                ? selectedNodeObj.type === 'FloatingText'
-                  ? 'Text Style'
-                  : ['Square', 'Diamond', 'Circle'].includes(
-                        selectedNodeObj.type,
-                      )
-                    ? 'SHAPE STYLE'
-                    : 'NODE STYLE'
-                : 'Line Style'}
+              {isMultiSelect
+                ? 'MULTIPLE SELECTED'
+                : selectedNodeObj
+                  ? selectedNodeObj.type === 'FloatingText'
+                    ? 'Text Style'
+                    : ['Square', 'Diamond', 'Circle'].includes(
+                          selectedNodeObj.type,
+                        )
+                      ? 'SHAPE STYLE'
+                      : 'NODE STYLE'
+                  : 'Line Style'}
             </h4>
           </div>
 
@@ -1323,7 +1470,7 @@ export default function CanvasBoard({
                 },
               ],
             })
-            setSelectedNode(newNodeId)
+            setSelectedNodes([newNodeId])
           }
         }}
       >
@@ -1336,41 +1483,24 @@ export default function CanvasBoard({
         >
           <svg className="absolute inset-0 w-full h-full overflow-visible z-0 pointer-events-none">
             {funnel.edges.map((e) => {
-              const sourceNode = funnel.nodes.find((n) => n.id === e.source)
-              const targetNode = funnel.nodes.find((n) => n.id === e.target)
+              const sourceNode = getEffectiveNode(
+                funnel.nodes.find((n) => n.id === e.source),
+              )
+              const targetNode = getEffectiveNode(
+                funnel.nodes.find((n) => n.id === e.target),
+              )
               if (!sourceNode || !targetNode) return null
               const isSelected = selectedEdge === e.id
 
-              const sX =
-                draggedNode?.id === e.source ? draggedNode.x : sourceNode.x
-              const sY =
-                draggedNode?.id === e.source ? draggedNode.y : sourceNode.y
               const sourceCoords = getRightPortCoords(
-                draggedNode?.id === e.source
-                  ? {
-                      ...sourceNode,
-                      width: draggedNode.width ?? sourceNode.width,
-                      height: draggedNode.height ?? sourceNode.height,
-                    }
-                  : sourceNode,
-                sX,
-                sY,
+                sourceNode,
+                sourceNode.x,
+                sourceNode.y,
               )
-
-              const tX =
-                draggedNode?.id === e.target ? draggedNode.x : targetNode.x
-              const tY =
-                draggedNode?.id === e.target ? draggedNode.y : targetNode.y
               const targetCoords = getLeftPortCoords(
-                draggedNode?.id === e.target
-                  ? {
-                      ...targetNode,
-                      width: draggedNode.width ?? targetNode.width,
-                      height: draggedNode.height ?? targetNode.height,
-                    }
-                  : targetNode,
-                tX,
-                tY,
+                targetNode,
+                targetNode.x,
+                targetNode.y,
               )
 
               const d = `M ${sourceCoords.x} ${sourceCoords.y} C ${sourceCoords.x + 50} ${sourceCoords.y}, ${targetCoords.x - 50} ${targetCoords.y}, ${targetCoords.x} ${targetCoords.y}`
@@ -1393,7 +1523,7 @@ export default function CanvasBoard({
                     ev.stopPropagation()
                     if (activeTool === 'Select') {
                       setSelectedEdge(e.id)
-                      setSelectedNode(null)
+                      setSelectedNodes([])
                     }
                   }}
                 />
@@ -1466,6 +1596,24 @@ export default function CanvasBoard({
                     />
                   )
               })()}
+            {selectionBox &&
+              (() => {
+                const w = Math.abs(selectionBox.currentX - selectionBox.startX)
+                const h = Math.abs(selectionBox.currentY - selectionBox.startY)
+                const x = Math.min(selectionBox.startX, selectionBox.currentX)
+                const y = Math.min(selectionBox.startY, selectionBox.currentY)
+                return (
+                  <rect
+                    x={x}
+                    y={y}
+                    width={w}
+                    height={h}
+                    fill="rgba(168, 85, 247, 0.08)"
+                    stroke="#a855f7"
+                    strokeWidth={1 / transform.scale}
+                  />
+                )
+              })()}
           </svg>
 
           <div className="absolute inset-0 w-full h-full pointer-events-none">
@@ -1489,55 +1637,34 @@ export default function CanvasBoard({
               return (
                 <NodeItem
                   key={n.id}
-                  node={
-                    draggedNode?.id === n.id
-                      ? {
-                          ...n,
-                          x: draggedNode.x,
-                          y: draggedNode.y,
-                          width: draggedNode.width ?? n.width,
-                          height: draggedNode.height ?? n.height,
-                        }
-                      : n
-                  }
-                  selected={selectedNode === n.id}
+                  node={getEffectiveNode(n)!}
+                  selected={selectedNodes.includes(n.id)}
                   snapToGrid={snapToGrid}
                   activeTool={activeTool}
                   taskProgress={taskProgress}
-                  onSelect={() => {
-                    setSelectedNode(n.id)
-                    setSelectedEdge(null)
-                  }}
-                  onMoveStart={() =>
-                    setDraggedNode({
-                      id: n.id,
-                      x: n.x,
-                      y: n.y,
-                      width: n.width,
-                      height: n.height,
-                    })
+                  onPointerDownAction={(shiftKey) =>
+                    handleNodePointerDown(n.id, shiftKey)
                   }
-                  onMove={(x, y) =>
-                    setDraggedNode((prev) =>
-                      prev
-                        ? { ...prev, x, y }
-                        : { id: n.id, x, y, width: n.width, height: n.height },
-                    )
+                  onMove={(dx, dy) =>
+                    setDragState({ isDragging: true, dx, dy })
                   }
-                  onMoveEnd={(x, y) => {
-                    setDraggedNode(null)
+                  onMoveEnd={(dx, dy) => {
+                    setDragState(null)
+                    if (dx === 0 && dy === 0) return
                     onChange({
                       ...funnel,
                       nodes: funnel.nodes.map((node) =>
-                        node.id === n.id ? { ...node, x, y } : node,
+                        selectedNodes.includes(node.id)
+                          ? { ...node, x: node.x + dx, y: node.y + dy }
+                          : node,
                       ),
                     })
                   }}
                   onResize={(x, y, w, h) =>
-                    setDraggedNode({ id: n.id, x, y, width: w, height: h })
+                    setResizingNode({ id: n.id, x, y, width: w, height: h })
                   }
                   onResizeEnd={(x, y, w, h) => {
-                    setDraggedNode(null)
+                    setResizingNode(null)
                     onChange({
                       ...funnel,
                       nodes: funnel.nodes.map((node) =>
@@ -1548,7 +1675,21 @@ export default function CanvasBoard({
                     })
                   }}
                   onAddChild={() => handleAddChild(n.id)}
-                  onDelete={() => handleDeleteNode(n.id)}
+                  onDelete={() => {
+                    if (selectedNodes.includes(n.id)) handleDeleteSelected()
+                    else {
+                      onChange({
+                        ...funnel,
+                        nodes: funnel.nodes.filter((x) => x.id !== n.id),
+                        edges: funnel.edges.filter(
+                          (e) => e.source !== n.id && e.target !== n.id,
+                        ),
+                      })
+                      if (rightPanelState?.nodeId === n.id)
+                        setRightPanelState(null)
+                      if (settingsNodeId === n.id) setSettingsNodeId(null)
+                    }
+                  }}
                   onOpenRightPanel={(tab) =>
                     setRightPanelState({ nodeId: n.id, tab })
                   }

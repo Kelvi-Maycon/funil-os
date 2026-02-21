@@ -53,10 +53,9 @@ type NodeItemProps = {
   snapToGrid?: boolean
   activeTool: string
   taskProgress: { total: number; completed: number }
-  onSelect: () => void
-  onMoveStart: () => void
-  onMove: (x: number, y: number) => void
-  onMoveEnd: (x: number, y: number) => void
+  onPointerDownAction: (shiftKey: boolean) => void
+  onMove: (dx: number, dy: number) => void
+  onMoveEnd: (dx: number, dy: number) => void
   onResize?: (x: number, y: number, w: number, h: number) => void
   onResizeEnd?: (x: number, y: number, w: number, h: number) => void
   scale: number
@@ -76,8 +75,7 @@ export default function NodeItem({
   snapToGrid,
   activeTool,
   taskProgress,
-  onSelect,
-  onMoveStart,
+  onPointerDownAction,
   onMove,
   onMoveEnd,
   onResize,
@@ -177,23 +175,24 @@ export default function NodeItem({
     e.stopPropagation()
     target.setPointerCapture(e.pointerId)
     setIsDragging(true)
-    onSelect()
-    onMoveStart()
+    onPointerDownAction(e.shiftKey)
     document.body.style.userSelect = 'none'
 
-    const startX = e.clientX,
-      startY = e.clientY
-    const initialX = node.x,
-      initialY = node.y
+    const startX = e.clientX
+    const startY = e.clientY
+    const initialNodeX = node.x
+    const initialNodeY = node.y
 
     const handlePointerMove = (moveEv: PointerEvent) => {
-      let newX = initialX + (moveEv.clientX - startX) / scale
-      let newY = initialY + (moveEv.clientY - startY) / scale
+      let dx = (moveEv.clientX - startX) / scale
+      let dy = (moveEv.clientY - startY) / scale
       if (snapToGrid) {
-        newX = Math.round(newX / 28) * 28
-        newY = Math.round(newY / 28) * 28
+        const snappedX = Math.round((initialNodeX + dx) / 28) * 28
+        const snappedY = Math.round((initialNodeY + dy) / 28) * 28
+        dx = snappedX - initialNodeX
+        dy = snappedY - initialNodeY
       }
-      onMove(newX, newY)
+      onMove(dx, dy)
     }
 
     const handlePointerUp = (upEv: PointerEvent) => {
@@ -204,13 +203,15 @@ export default function NodeItem({
       }
       setIsDragging(false)
       document.body.style.userSelect = ''
-      let finalX = initialX + (upEv.clientX - startX) / scale
-      let finalY = initialY + (upEv.clientY - startY) / scale
+      let dx = (upEv.clientX - startX) / scale
+      let dy = (upEv.clientY - startY) / scale
       if (snapToGrid) {
-        finalX = Math.round(finalX / 28) * 28
-        finalY = Math.round(finalY / 28) * 28
+        const snappedX = Math.round((initialNodeX + dx) / 28) * 28
+        const snappedY = Math.round((initialNodeY + dy) / 28) * 28
+        dx = snappedX - initialNodeX
+        dy = snappedY - initialNodeY
       }
-      onMoveEnd(finalX, finalY)
+      onMoveEnd(dx, dy)
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
@@ -223,7 +224,7 @@ export default function NodeItem({
     const target = e.target as HTMLElement
     target.setPointerCapture(e.pointerId)
     setIsResizing(true)
-    onSelect()
+    onPointerDownAction(e.shiftKey)
     document.body.style.userSelect = 'none'
 
     const startX = e.clientX
@@ -361,7 +362,7 @@ export default function NodeItem({
       <div
         className={cn(
           'absolute top-0 left-0 pointer-events-auto min-w-[50px] p-2 z-10 group outline-none',
-          selected && 'ring-2 ring-primary/20 bg-primary/5 rounded-md',
+          selected && 'ring-2 ring-purple-500/60 shadow-lg rounded-md',
           isDragging
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing'
             : isPanMode
@@ -645,7 +646,7 @@ export default function NodeItem({
       <div
         className={cn(
           'absolute top-0 left-0 pointer-events-auto min-w-[150px] max-w-[400px] p-4 bg-yellow-50/90 backdrop-blur-sm rounded-xl shadow-sm border border-yellow-200 text-slate-800 z-10 group',
-          selected && 'ring-2 ring-yellow-400 shadow-md',
+          selected && 'ring-2 ring-purple-500/60 shadow-md',
           isDragging
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing shadow-lg'
             : isPanMode
@@ -718,7 +719,8 @@ export default function NodeItem({
       <div
         className={cn(
           'absolute top-0 left-0 pointer-events-auto w-[300px] rounded-2xl shadow-sm border border-slate-200 bg-white z-10 overflow-hidden group',
-          selected && 'ring-4 ring-primary/20 border-primary/30 shadow-md',
+          selected &&
+            'ring-4 ring-purple-500/40 border-purple-500/50 shadow-md',
           isDragging
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing shadow-lg'
             : isPanMode
@@ -776,10 +778,13 @@ export default function NodeItem({
     <div
       className={cn(
         'absolute top-0 left-0 pointer-events-auto w-[260px] rounded-[1.25rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border p-5 z-10 flex flex-col gap-2 group select-none',
-        (selected || isHovered) &&
+        isHovered &&
+          !selected &&
           'shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-4 ring-slate-50',
+        selected &&
+          'shadow-[0_8px_30px_rgba(0,0,0,0.12)] ring-2 ring-purple-500/40 border-purple-500/50',
         isDragging &&
-          'opacity-90 scale-[1.02] z-50 shadow-[0_12px_40px_rgba(0,0,0,0.1)] ring-4 ring-primary/10 border-primary/20',
+          'opacity-90 scale-[1.02] z-50 shadow-[0_12px_40px_rgba(0,0,0,0.1)]',
         node.data.isTaskMode && node.data.isCompleted
           ? 'bg-[#ecfdf5] border-[#bbf7d0]'
           : (node.style?.fill && node.style.fill !== 'transparent') ||

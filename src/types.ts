@@ -25,6 +25,7 @@ export type Node = {
   y: number
   width?: number
   height?: number
+  groupId?: string
   data: NodeData
   style?: {
     fill?: string
