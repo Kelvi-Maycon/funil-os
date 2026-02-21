@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 export default function Documents() {
   const [docs, setDocs] = useDocumentStore()
@@ -135,7 +136,7 @@ export default function Documents() {
                 size={16}
                 className="text-muted-foreground fill-muted-foreground/20 shrink-0"
               />
-              <span className="truncate flex-1 font-semibold">
+              <span className="truncate flex-1 font-semibold text-sm">
                 {folder.name}
               </span>
             </div>
@@ -148,16 +149,21 @@ export default function Documents() {
             draggable
             onDragStart={(e) => onDragStart(e, 'document', doc.id)}
             onClick={() => setActiveId(doc.id)}
-            className={`flex items-center gap-3 py-2 pr-3 rounded-lg text-base transition-colors w-full text-left cursor-grab active:cursor-grabbing select-none ${activeId === doc.id ? 'bg-secondary text-secondary-foreground font-semibold shadow-sm' : 'text-foreground hover:bg-muted'}`}
+            className={cn(
+              'flex items-center gap-3 py-2 pr-3 rounded-lg text-base transition-colors w-full text-left cursor-grab active:cursor-grabbing select-none font-medium',
+              activeId === doc.id
+                ? 'bg-primary/10 text-primary'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+            )}
             style={{
               paddingLeft: `${level * 16 + (parentId === null ? 12 : 36)}px`,
             }}
           >
             <FileText
               size={16}
-              className={`shrink-0 ${activeId === doc.id ? 'text-secondary-foreground' : 'text-muted-foreground'}`}
+              className={`shrink-0 ${activeId === doc.id ? 'text-primary' : 'text-slate-400'}`}
             />
-            <span className="truncate flex-1">{doc.title}</span>
+            <span className="truncate flex-1 text-sm">{doc.title}</span>
           </button>
         ))}
       </div>
@@ -169,7 +175,7 @@ export default function Documents() {
       <div className="w-72 border-r border-border bg-card flex flex-col shrink-0 z-10 shadow-sm">
         <div className="p-6 border-b border-border flex flex-col gap-3">
           <Button
-            className="w-full justify-start shadow-sm"
+            className="w-full justify-start shadow-sm font-semibold text-sm"
             onClick={createDoc}
           >
             <Plus size={16} className="mr-2" /> Novo Documento
@@ -178,7 +184,7 @@ export default function Documents() {
             <DialogTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start text-muted-foreground hover:text-foreground shadow-sm bg-background border-border"
+                className="w-full justify-start text-muted-foreground hover:text-foreground shadow-sm bg-background border-border text-sm"
               >
                 <FolderPlus size={16} className="mr-2" /> Nova Pasta
               </Button>
@@ -209,44 +215,40 @@ export default function Documents() {
           <div className="p-3 min-h-full">{renderTree(null)}</div>
         </ScrollArea>
       </div>
-      <div className="flex-1 overflow-auto bg-background p-6">
+      <div className="flex-1 overflow-hidden bg-[#f8fafc]">
         {activeDoc ? (
-          <div className="max-w-4xl mx-auto h-full rounded-2xl bg-card border border-border shadow-sm overflow-hidden flex flex-col">
-            <RichTextEditor
-              doc={activeDoc}
-              onTitleChange={(title) =>
-                setDocs(
-                  docs.map((d) =>
-                    d.id === activeDoc.id ? { ...d, title } : d,
-                  ),
-                )
-              }
-              onProjectChange={(projectId) =>
-                setDocs(
-                  docs.map((d) =>
-                    d.id === activeDoc.id ? { ...d, projectId } : d,
-                  ),
-                )
-              }
-              onChange={(content) =>
-                setDocs(
-                  docs.map((d) =>
-                    d.id === activeDoc.id ? { ...d, content } : d,
-                  ),
-                )
-              }
-            />
-          </div>
+          <RichTextEditor
+            doc={activeDoc}
+            onTitleChange={(title) =>
+              setDocs(
+                docs.map((d) => (d.id === activeDoc.id ? { ...d, title } : d)),
+              )
+            }
+            onProjectChange={(projectId) =>
+              setDocs(
+                docs.map((d) =>
+                  d.id === activeDoc.id ? { ...d, projectId } : d,
+                ),
+              )
+            }
+            onChange={(content) =>
+              setDocs(
+                docs.map((d) =>
+                  d.id === activeDoc.id ? { ...d, content } : d,
+                ),
+              )
+            }
+          />
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground flex-col gap-4 max-w-lg mx-auto bg-card rounded-2xl border border-dashed border-border shadow-sm min-h-[400px]">
-            <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center text-primary mb-2">
+          <div className="flex items-center justify-center h-full text-muted-foreground flex-col gap-4 max-w-lg mx-auto min-h-[400px]">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2">
               <FileText size={24} />
             </div>
             <h3 className="text-xl font-bold text-foreground">Documentos</h3>
             <span className="text-base text-center">
               Selecione um documento na barra lateral ou crie um novo.
             </span>
-            <Button onClick={createDoc} className="mt-2">
+            <Button onClick={createDoc} className="mt-2 font-semibold">
               <Plus size={16} className="mr-2" /> Novo Documento
             </Button>
           </div>

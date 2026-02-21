@@ -347,21 +347,21 @@ export default function RichTextEditor({
     <div className="flex w-full h-full overflow-hidden bg-background relative">
       <div
         className={cn(
-          'flex flex-col h-full overflow-y-auto transition-[width] duration-300 ease-in-out',
-          editingCanvasId ? 'w-[50%] border-r' : 'w-full',
+          'flex flex-col h-full overflow-y-auto transition-all duration-300 ease-in-out flex-1 min-w-0',
+          editingCanvasId ? 'pr-0' : '',
         )}
       >
         <div
           className={cn(
             'flex flex-col flex-1 mx-auto w-full transition-all duration-300',
-            editingCanvasId ? 'p-6 max-w-3xl' : 'p-8 max-w-4xl',
+            editingCanvasId ? 'p-6 lg:p-8 max-w-4xl' : 'p-8 max-w-5xl',
           )}
         >
           <div className="flex items-center gap-4 mb-6 border-b pb-4 sticky top-0 bg-background/95 backdrop-blur z-10 shrink-0">
             <Input
               value={doc.title}
               onChange={(e) => onTitleChange(e.target.value)}
-              className="text-2xl font-bold border-none outline-none focus-visible:ring-0 px-0 h-auto shadow-none bg-transparent"
+              className="text-3xl font-bold border-none outline-none focus-visible:ring-0 px-0 h-auto shadow-none bg-transparent"
               placeholder="Título do Documento"
             />
             <div className="ml-auto flex flex-col sm:flex-row items-end sm:items-center gap-2">
@@ -398,15 +398,16 @@ export default function RichTextEditor({
             </div>
           </div>
 
-          <div className="flex items-center gap-1 mb-6 shrink-0 flex-wrap">
+          <div className="flex items-center gap-1 mb-6 shrink-0 flex-wrap bg-card border border-border p-1.5 rounded-2xl shadow-sm w-fit">
             <Button
               variant="ghost"
               size="icon"
               onMouseDown={handleToolbarMouseDown}
               onClick={() => exec('formatBlock', 'H1')}
               title="Título 1"
+              className="rounded-lg h-8 w-8"
             >
-              <Heading1 size={18} />
+              <Heading1 size={16} />
             </Button>
             <Button
               variant="ghost"
@@ -414,18 +415,20 @@ export default function RichTextEditor({
               onMouseDown={handleToolbarMouseDown}
               onClick={() => exec('formatBlock', 'H2')}
               title="Título 2"
+              className="rounded-lg h-8 w-8"
             >
-              <Heading2 size={18} />
+              <Heading2 size={16} />
             </Button>
-            <Separator orientation="vertical" className="h-6 mx-2" />
+            <Separator orientation="vertical" className="h-4 mx-1" />
             <Button
               variant="ghost"
               size="icon"
               onMouseDown={handleToolbarMouseDown}
               onClick={() => exec('bold')}
               title="Negrito"
+              className="rounded-lg h-8 w-8"
             >
-              <Bold size={18} />
+              <Bold size={16} />
             </Button>
             <Button
               variant="ghost"
@@ -433,18 +436,20 @@ export default function RichTextEditor({
               onMouseDown={handleToolbarMouseDown}
               onClick={() => exec('italic')}
               title="Itálico"
+              className="rounded-lg h-8 w-8"
             >
-              <Italic size={18} />
+              <Italic size={16} />
             </Button>
-            <Separator orientation="vertical" className="h-6 mx-2" />
+            <Separator orientation="vertical" className="h-4 mx-1" />
             <Button
               variant="ghost"
               size="icon"
               onMouseDown={handleToolbarMouseDown}
               onClick={() => exec('insertUnorderedList')}
               title="Lista"
+              className="rounded-lg h-8 w-8"
             >
-              <List size={18} />
+              <List size={16} />
             </Button>
             <Button
               variant="ghost"
@@ -452,8 +457,9 @@ export default function RichTextEditor({
               onMouseDown={handleToolbarMouseDown}
               onClick={() => exec('formatBlock', 'BLOCKQUOTE')}
               title="Citação"
+              className="rounded-lg h-8 w-8"
             >
-              <Quote size={18} />
+              <Quote size={16} />
             </Button>
             <Button
               variant="ghost"
@@ -461,11 +467,12 @@ export default function RichTextEditor({
               onMouseDown={handleToolbarMouseDown}
               onClick={() => exec('insertHorizontalRule')}
               title="Divisor"
+              className="rounded-lg h-8 w-8"
             >
-              <SeparatorHorizontal size={18} />
+              <SeparatorHorizontal size={16} />
             </Button>
 
-            <Separator orientation="vertical" className="h-6 mx-2" />
+            <Separator orientation="vertical" className="h-4 mx-1" />
 
             <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
               <DialogTrigger asChild>
@@ -474,8 +481,9 @@ export default function RichTextEditor({
                   size="icon"
                   onMouseDown={() => saveSelection()}
                   title="Adicionar Imagem"
+                  className="rounded-lg h-8 w-8"
                 >
-                  <ImageIcon size={18} />
+                  <ImageIcon size={16} />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -502,10 +510,10 @@ export default function RichTextEditor({
                   variant="ghost"
                   size="sm"
                   onMouseDown={() => saveSelection()}
-                  className="ml-auto flex items-center bg-primary/5 hover:bg-primary/10 text-primary transition-colors shrink-0"
+                  className="ml-2 flex items-center bg-primary/10 hover:bg-primary/20 text-primary transition-colors shrink-0 rounded-xl font-semibold px-4 h-8"
                   title="Importar Canvas"
                 >
-                  <Network size={16} className="mr-2" /> Importar Canvas
+                  <Network size={14} className="mr-2" /> Importar Canvas
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
@@ -556,7 +564,7 @@ export default function RichTextEditor({
           <div
             ref={editorRef}
             contentEditable
-            className="flex-1 outline-none prose prose-indigo max-w-none focus:outline-none min-h-[500px] pb-32"
+            className="flex-1 outline-none prose prose-slate max-w-none focus:outline-none min-h-[500px] pb-32 prose-headings:font-bold prose-h1:text-4xl prose-h2:text-2xl prose-p:text-base prose-p:leading-relaxed"
             onBlur={(e) => {
               saveSelection()
               onChange(e.currentTarget.innerHTML)
@@ -573,11 +581,11 @@ export default function RichTextEditor({
       </div>
 
       {editingCanvasId && activeCanvas && (
-        <div className="w-[50%] h-full flex flex-col bg-background shadow-[-10px_0_30px_rgba(0,0,0,0.05)] animate-in slide-in-from-right z-20 shrink-0">
-          <div className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
-            <div className="flex items-center gap-2 text-primary">
-              <Network size={18} />
-              <h3 className="font-semibold text-sm text-foreground">
+        <div className="w-[450px] lg:w-[500px] xl:w-[600px] h-full flex flex-col bg-background shadow-[-10px_0_40px_rgba(0,0,0,0.08)] animate-in slide-in-from-right z-20 shrink-0 border-l border-border">
+          <div className="h-16 border-b flex items-center justify-between px-6 bg-card shrink-0 shadow-sm z-10 relative">
+            <div className="flex items-center gap-3 text-primary">
+              <Network size={20} />
+              <h3 className="font-bold text-base text-foreground">
                 {activeCanvas.name}
               </h3>
             </div>
@@ -585,15 +593,18 @@ export default function RichTextEditor({
               variant="ghost"
               size="icon"
               onClick={() => setEditingCanvasId(null)}
+              className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
             >
-              <X
-                size={18}
-                className="text-muted-foreground hover:text-foreground"
-              />
+              <X size={18} />
             </Button>
           </div>
           <div className="flex-1 relative flex overflow-hidden">
-            <CanvasBoard funnel={activeCanvas} onChange={handleCanvasChange} />
+            <CanvasBoard
+              funnel={activeCanvas}
+              onChange={handleCanvasChange}
+              hideHeader
+              onBack={() => setEditingCanvasId(null)}
+            />
           </div>
         </div>
       )}

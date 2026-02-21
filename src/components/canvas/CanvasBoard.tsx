@@ -105,7 +105,11 @@ export default function CanvasBoard({
   const [settingsNodeId, setSettingsNodeId] = useState<string | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
 
-  const [transform, setTransform] = useState({ x: 400, y: 150, scale: 1 })
+  const [transform, setTransform] = useState({
+    x: hideHeader ? 300 : 400,
+    y: 150,
+    scale: 1,
+  })
   const [isPanning, setIsPanning] = useState(false)
   const [isSpacePressed, setIsSpacePressed] = useState(false)
   const [activeTool, setActiveTool] = useState<
@@ -730,7 +734,7 @@ export default function CanvasBoard({
   return (
     <div className="flex-1 flex relative overflow-hidden bg-[#f8fafc]">
       {!hideHeader && (
-        <div className="absolute top-6 left-[340px] flex items-center gap-3 text-[14px] z-30 bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+        <div className="absolute top-6 left-[300px] flex items-center gap-3 text-[14px] z-30 bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
           <span
             className="text-slate-500 font-medium cursor-pointer hover:text-slate-800 transition-colors"
             onClick={() => navigate('/canvas')}
@@ -745,7 +749,7 @@ export default function CanvasBoard({
         </div>
       )}
 
-      {onBack && (
+      {onBack && !hideHeader && (
         <Button
           variant="ghost"
           size="sm"
@@ -756,7 +760,12 @@ export default function CanvasBoard({
         </Button>
       )}
 
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center p-1.5 bg-white/90 backdrop-blur-md rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-200 z-30 gap-1">
+      <div
+        className={cn(
+          'absolute left-1/2 -translate-x-1/2 flex items-center p-1.5 bg-white/90 backdrop-blur-md rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-200 z-30 gap-1',
+          hideHeader ? 'top-4' : 'top-6',
+        )}
+      >
         {canvasTools.map((t) => {
           if (t.id === 'divider')
             return <div key={t.id} className="w-px h-6 bg-slate-200 mx-1" />
@@ -769,7 +778,7 @@ export default function CanvasBoard({
                   className={cn(
                     'w-10 h-10 rounded-full transition-all relative',
                     activeTool === t.id
-                      ? 'bg-purple-100 text-purple-700 shadow-sm'
+                      ? 'bg-primary/10 text-primary shadow-sm'
                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100',
                   )}
                   onClick={() => setActiveTool(t.id as any)}
@@ -822,8 +831,9 @@ export default function CanvasBoard({
 
       <div
         className={cn(
-          'absolute top-6 flex items-center p-1 bg-white/90 backdrop-blur-md rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-200 z-30 gap-1 transition-all duration-300',
+          'absolute flex items-center p-1 bg-white/90 backdrop-blur-md rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-200 z-30 gap-1 transition-all duration-300',
           rightOffset,
+          hideHeader ? 'top-4' : 'top-6',
         )}
       >
         <Button
@@ -838,7 +848,7 @@ export default function CanvasBoard({
         </Button>
         <button
           onClick={() => setTransform({ x: 400, y: 150, scale: 1 })}
-          className="text-[13px] font-semibold text-slate-600 px-3 min-w-[3.5rem] hover:text-purple-600 transition-colors text-center"
+          className="text-[13px] font-semibold text-slate-600 px-3 min-w-[3.5rem] hover:text-primary transition-colors text-center"
         >
           {Math.round(transform.scale * 100)}%
         </button>
@@ -866,7 +876,7 @@ export default function CanvasBoard({
               onClick={() => setSnapToGrid(!snapToGrid)}
               className={cn(
                 'w-10 h-10 flex items-center justify-center bg-white border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-full text-slate-500 hover:text-slate-700 transition-all',
-                snapToGrid && 'bg-purple-50 text-purple-600 border-purple-100',
+                snapToGrid && 'bg-primary/10 text-primary border-primary/20',
               )}
             >
               <Grid size={16} />
@@ -880,7 +890,7 @@ export default function CanvasBoard({
               onClick={() => setShowMinimap(!showMinimap)}
               className={cn(
                 'w-10 h-10 flex items-center justify-center bg-white border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-full text-slate-500 hover:text-slate-700 transition-all',
-                showMinimap && 'bg-purple-50 text-purple-600 border-purple-100',
+                showMinimap && 'bg-primary/10 text-primary border-primary/20',
               )}
             >
               <Map size={16} />
@@ -892,8 +902,8 @@ export default function CanvasBoard({
 
       <div
         className={cn(
-          'absolute left-6 z-20 bottom-6 flex pointer-events-none transition-all',
-          onBack ? 'top-[72px]' : 'top-6',
+          'absolute left-0 z-20 bottom-0 flex pointer-events-none transition-all',
+          hideHeader ? 'top-0' : onBack ? 'top-[72px]' : 'top-6',
         )}
       >
         <div className="pointer-events-auto flex h-full">
@@ -927,7 +937,7 @@ export default function CanvasBoard({
               />
             ))}
             <div
-              className="absolute border-4 border-purple-500 bg-purple-500/10 rounded-xl"
+              className="absolute border-4 border-primary bg-primary/10 rounded-xl"
               style={{
                 left: -transform.x / transform.scale,
                 top: -transform.y / transform.scale,
@@ -944,7 +954,7 @@ export default function CanvasBoard({
       {(selectedNodeObj || selectedEdgeObj) && (
         <div
           className={cn(
-            'absolute top-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-slate-200 p-5 w-[280px] flex flex-col gap-6 z-40 transition-all max-h-[85vh] overflow-y-auto',
+            'absolute top-6 bg-white/95 backdrop-blur-md rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-5 w-[280px] flex flex-col gap-6 z-40 transition-all max-h-[85vh] overflow-y-auto',
             rightPanelState ? 'right-[540px]' : 'right-6',
           )}
         >
@@ -977,7 +987,7 @@ export default function CanvasBoard({
                       min="0"
                       max="1"
                       step="0.05"
-                      className="flex-1 accent-purple-500 h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
+                      className="flex-1 accent-primary h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
                       value={selectedNodeObj.style?.opacity ?? 1}
                       onChange={(e) =>
                         updateNodeStyle({ opacity: parseFloat(e.target.value) })
@@ -1089,7 +1099,7 @@ export default function CanvasBoard({
                       min="1"
                       max="8"
                       step="1"
-                      className="flex-1 accent-purple-500 h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
+                      className="flex-1 accent-primary h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
                       value={selectedNodeObj.style?.strokeWidth || 2}
                       onChange={(e) =>
                         updateNodeStyle({
@@ -1113,7 +1123,7 @@ export default function CanvasBoard({
                         'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
                         selectedNodeObj.style?.strokeDasharray === 'none' ||
                           !selectedNodeObj.style?.strokeDasharray
-                          ? 'border-purple-500 bg-purple-50 text-purple-700'
+                          ? 'border-primary bg-primary/10 text-primary'
                           : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
                       )}
                       onClick={() =>
@@ -1135,7 +1145,7 @@ export default function CanvasBoard({
                       className={cn(
                         'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
                         selectedNodeObj.style?.strokeDasharray === '8 8'
-                          ? 'border-purple-500 bg-purple-50 text-purple-700'
+                          ? 'border-primary bg-primary/10 text-primary'
                           : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
                       )}
                       onClick={() =>
@@ -1158,7 +1168,7 @@ export default function CanvasBoard({
                       className={cn(
                         'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
                         selectedNodeObj.style?.strokeDasharray === '4 4'
-                          ? 'border-purple-500 bg-purple-50 text-purple-700'
+                          ? 'border-primary bg-primary/10 text-primary'
                           : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
                       )}
                       onClick={() =>
@@ -1203,7 +1213,7 @@ export default function CanvasBoard({
                       min="0"
                       max="1"
                       step="0.05"
-                      className="flex-1 accent-purple-500 h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
+                      className="flex-1 accent-primary h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
                       value={selectedNodeObj.style?.opacity ?? 1}
                       onChange={(e) =>
                         updateNodeStyle({ opacity: parseFloat(e.target.value) })
@@ -1321,7 +1331,7 @@ export default function CanvasBoard({
                       'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
                       selectedEdgeObj.style?.strokeDasharray === 'none' ||
                         !selectedEdgeObj.style?.strokeDasharray
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
                     )}
                     onClick={() => updateEdgeStyle({ strokeDasharray: 'none' })}
@@ -1341,7 +1351,7 @@ export default function CanvasBoard({
                     className={cn(
                       'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
                       selectedEdgeObj.style?.strokeDasharray === '8 8'
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
                     )}
                     onClick={() => updateEdgeStyle({ strokeDasharray: '8 8' })}
@@ -1362,7 +1372,7 @@ export default function CanvasBoard({
                     className={cn(
                       'flex-1 h-9 rounded-lg border-2 flex items-center justify-center transition-colors',
                       selectedEdgeObj.style?.strokeDasharray === '4 4'
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-400',
                     )}
                     onClick={() => updateEdgeStyle({ strokeDasharray: '4 4' })}
@@ -1393,7 +1403,7 @@ export default function CanvasBoard({
                     min="1"
                     max="8"
                     step="1"
-                    className="flex-1 accent-purple-500 h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
+                    className="flex-1 accent-primary h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer"
                     value={selectedEdgeObj.style?.strokeWidth || 2}
                     onChange={(e) =>
                       updateEdgeStyle({ strokeWidth: parseInt(e.target.value) })
@@ -1589,8 +1599,8 @@ export default function CanvasBoard({
                       width={w}
                       height={h}
                       rx={8}
-                      fill="rgba(168, 85, 247, 0.1)"
-                      stroke="#a855f7"
+                      fill="rgba(244, 81, 11, 0.1)"
+                      stroke="#f4510b"
                       strokeWidth={2 / transform.scale}
                       strokeDasharray="4 4"
                     />
@@ -1602,8 +1612,8 @@ export default function CanvasBoard({
                       cy={y + h / 2}
                       rx={w / 2}
                       ry={h / 2}
-                      fill="rgba(168, 85, 247, 0.1)"
-                      stroke="#a855f7"
+                      fill="rgba(244, 81, 11, 0.1)"
+                      stroke="#f4510b"
                       strokeWidth={2 / transform.scale}
                       strokeDasharray="4 4"
                     />
@@ -1612,8 +1622,8 @@ export default function CanvasBoard({
                   return (
                     <polygon
                       points={`${x + w / 2},${y} ${x + w},${y + h / 2} ${x + w / 2},${y + h} ${x},${y + h / 2}`}
-                      fill="rgba(168, 85, 247, 0.1)"
-                      stroke="#a855f7"
+                      fill="rgba(244, 81, 11, 0.1)"
+                      stroke="#f4510b"
                       strokeWidth={2 / transform.scale}
                       strokeDasharray="4 4"
                       strokeLinejoin="round"
@@ -1632,8 +1642,8 @@ export default function CanvasBoard({
                     y={y}
                     width={w}
                     height={h}
-                    fill="rgba(168, 85, 247, 0.08)"
-                    stroke="#a855f7"
+                    fill="rgba(244, 81, 11, 0.08)"
+                    stroke="#f4510b"
                     strokeWidth={1 / transform.scale}
                   />
                 )
