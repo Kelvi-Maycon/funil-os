@@ -26,11 +26,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Plus, LayoutGrid, List, FolderPlus, Home } from 'lucide-react'
+import { Plus, FolderPlus, Home } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import FunnelGrid from '@/components/funnels/FunnelGrid'
 import FunnelList from '@/components/funnels/FunnelList'
+import { ViewToggle } from '@/components/folders/FolderComponents'
 
 export default function Funnels() {
   const [funnels, setFunnels] = useFunnelStore()
@@ -222,27 +222,7 @@ export default function Funnels() {
           Canvas de Funis
         </h1>
         <div className="flex items-center gap-3">
-          <ToggleGroup
-            type="single"
-            value={viewMode}
-            onValueChange={(v) => v && setViewMode(v as 'grid' | 'list')}
-            className="bg-card border border-border p-1 rounded-full shadow-sm"
-          >
-            <ToggleGroupItem
-              value="grid"
-              aria-label="Visualização em Grade"
-              className="rounded-full data-[state=on]:bg-secondary data-[state=on]:text-secondary-foreground text-muted-foreground hover:text-foreground"
-            >
-              <LayoutGrid size={16} />
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="list"
-              aria-label="Visualização em Lista"
-              className="rounded-full data-[state=on]:bg-secondary data-[state=on]:text-secondary-foreground text-muted-foreground hover:text-foreground"
-            >
-              <List size={16} />
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <ViewToggle view={viewMode} onChange={setViewMode} />
           <Button variant="outline" onClick={() => setIsCreateFolderOpen(true)}>
             <FolderPlus size={16} className="mr-2" /> Nova Pasta
           </Button>

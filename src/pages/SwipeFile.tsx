@@ -21,6 +21,7 @@ import {
   Search,
   Image as ImageIcon,
   Pencil,
+  Plus,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -101,7 +102,7 @@ export default function SwipeFile() {
             <Filter size={16} className="mr-2" /> Filtrar
           </Button>
           <Button onClick={() => setAction({ type: 'swipe', mode: 'create' })}>
-            Salvar Inspiração
+            <Plus size={16} className="mr-2" /> Salvar Inspiração
           </Button>
         </div>
       </div>
@@ -129,7 +130,7 @@ export default function SwipeFile() {
             Adicione uma inspiração ou crie uma pasta.
           </p>
           <Button onClick={() => setAction({ type: 'swipe', mode: 'create' })}>
-            Salvar Inspiração
+            <Plus size={16} className="mr-2" /> Salvar Inspiração
           </Button>
         </div>
       ) : view === 'grid' ? (

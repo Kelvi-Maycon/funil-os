@@ -39,12 +39,20 @@ export function ViewToggle({
       type="single"
       value={view}
       onValueChange={(v) => v && onChange(v as 'grid' | 'list')}
-      className="bg-white border rounded-md"
+      className="bg-card border border-border p-1 rounded-full shadow-sm h-10 gap-0 inline-flex items-center"
     >
-      <ToggleGroupItem value="grid" aria-label="Grid view">
+      <ToggleGroupItem
+        value="grid"
+        aria-label="Grid view"
+        className="rounded-full w-8 h-8 p-0 data-[state=on]:bg-foreground data-[state=on]:text-background text-muted-foreground hover:text-foreground transition-all"
+      >
         <LayoutGrid size={16} />
       </ToggleGroupItem>
-      <ToggleGroupItem value="list" aria-label="List view">
+      <ToggleGroupItem
+        value="list"
+        aria-label="List view"
+        className="rounded-full w-8 h-8 p-0 data-[state=on]:bg-foreground data-[state=on]:text-background text-muted-foreground hover:text-foreground transition-all"
+      >
         <List size={16} />
       </ToggleGroupItem>
     </ToggleGroup>

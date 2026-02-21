@@ -5,26 +5,26 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-base font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
         default:
           'bg-primary text-primary-foreground hover:bg-[#D94208] shadow-sm',
-        dark: 'bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-sm',
+        dark: 'bg-foreground text-background hover:bg-foreground/90 shadow-sm',
         destructive:
           'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm',
         outline:
-          'border-2 border-border bg-transparent hover:bg-muted hover:text-foreground',
+          'border border-border bg-background hover:bg-muted hover:text-foreground shadow-sm',
         secondary: 'bg-muted text-foreground hover:bg-border shadow-sm',
         ghost: 'hover:bg-muted hover:text-foreground shadow-none',
         link: 'text-primary underline-offset-4 hover:underline shadow-none',
       },
       size: {
-        default: 'h-[38px] px-4 py-2',
-        sm: 'h-[32px] px-3',
-        lg: 'h-[44px] px-8',
-        icon: 'h-[38px] w-[38px]',
+        default: 'h-10 px-5 py-2',
+        sm: 'h-9 px-4',
+        lg: 'h-12 px-8 text-base',
+        icon: 'h-10 w-10',
       },
     },
     defaultVariants: {
