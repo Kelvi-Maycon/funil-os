@@ -1,4 +1,5 @@
-import { Node, Funnel, Task } from '@/types'
+import { Node, Funnel, Task, Asset } from '@/types'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -6,7 +7,6 @@ import {
   FileText,
   CheckSquare,
   Image as ImageIcon,
-  Link as LinkIcon,
   Plus,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -21,21 +21,30 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 
 export default function RightPanel({
   node,
   funnel,
+  defaultTab = 'details',
   onChange,
   onClose,
 }: {
   node: Node
   funnel: Funnel
+  defaultTab?: string
   onChange: (n: Node) => void
   onClose: () => void
 }) {
   const [docs, setDocs] = useDocumentStore()
   const [tasks, setTasks] = useTaskStore()
   const [assets, setAssets] = useAssetStore()
+  const [activeTab, setActiveTab] = useState(defaultTab)
+  const [inspectAsset, setInspectAsset] = useState<Asset | null>(null)
+
+  useEffect(() => {
+    setActiveTab(defaultTab)
+  }, [defaultTab, node.id])
 
   const linkedDocs = docs.filter((d) =>
     node.data.linkedDocumentIds?.includes(d.id),
@@ -143,7 +152,8 @@ export default function RightPanel({
       </div>
 
       <Tabs
-        defaultValue="details"
+        value={activeTab}
+        onValueChange={setActiveTab}
         className="flex-1 flex flex-col min-h-0 overflow-hidden"
       >
         <TabsList className="mx-8 mt-4 grid grid-cols-4 bg-slate-50/50 p-1 rounded-xl">
@@ -338,7 +348,8 @@ export default function RightPanel({
             {linkedAssets.map((a) => (
               <div
                 key={a.id}
-                className="rounded-xl overflow-hidden border bg-white shadow-sm group relative"
+                className="rounded-xl overflow-hidden border bg-white shadow-sm group relative cursor-pointer"
+                onClick={() => setInspectAsset(a)}
               >
                 <img
                   src={a.url}
@@ -358,6 +369,25 @@ export default function RightPanel({
           )}
         </TabsContent>
       </Tabs>
+
+      <Dialog
+        open={!!inspectAsset}
+        onOpenChange={(open) => !open && setInspectAsset(null)}
+      >
+        <DialogContent className="max-w-7xl w-full h-[90vh] p-0 bg-black/95 border-none shadow-2xl flex flex-col overflow-hidden rounded-none sm:rounded-none">
+          <DialogTitle className="sr-only">Inspeção de Asset</DialogTitle>
+          <div className="absolute top-6 left-6 text-white font-bold text-xl z-10 drop-shadow-md">
+            {inspectAsset?.name}
+          </div>
+          <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
+            <img
+              src={inspectAsset?.url}
+              alt={inspectAsset?.name}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

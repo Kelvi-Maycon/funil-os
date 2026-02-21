@@ -52,7 +52,10 @@ export default function CanvasBoard({
 
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null)
-  const [notesNodeId, setNotesNodeId] = useState<string | null>(null)
+  const [rightPanelState, setRightPanelState] = useState<{
+    nodeId: string
+    tab: string
+  } | null>(null)
   const [settingsNodeId, setSettingsNodeId] = useState<string | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
 
@@ -80,12 +83,12 @@ export default function CanvasBoard({
       if (node && boardRef.current) {
         const rect = boardRef.current.getBoundingClientRect()
         setTransform({
-          x: rect.width / 2 - node.x - 130,
-          y: rect.height / 2 - node.y - 40,
-          scale: 1,
+          x: rect.width / 2 - node.x * 1.5 - 195,
+          y: rect.height / 2 - node.y * 1.5 - 60,
+          scale: 1.5,
         })
         setSelectedNode(node.id)
-        setNotesNodeId(node.id)
+        setRightPanelState({ nodeId: node.id, tab: 'details' })
         searchParams.delete('nodeId')
         setSearchParams(searchParams, { replace: true })
       }
@@ -306,7 +309,7 @@ export default function CanvasBoard({
       nodes: funnel.nodes.filter((n) => n.id !== id),
       edges: funnel.edges.filter((e) => e.source !== id && e.target !== id),
     })
-    if (notesNodeId === id) setNotesNodeId(null)
+    if (rightPanelState?.nodeId === id) setRightPanelState(null)
     if (settingsNodeId === id) setSettingsNodeId(null)
     if (selectedNode === id) setSelectedNode(null)
   }
@@ -366,7 +369,7 @@ export default function CanvasBoard({
     }
   }
 
-  const rightOffset = notesNodeId ? 'right-[520px]' : 'right-6'
+  const rightOffset = rightPanelState ? 'right-[520px]' : 'right-6'
 
   return (
     <div className="flex-1 flex relative overflow-hidden bg-[#f8fafc]">
@@ -716,7 +719,9 @@ export default function CanvasBoard({
                   }}
                   onAddChild={() => handleAddChild(n.id)}
                   onDelete={() => handleDeleteNode(n.id)}
-                  onOpenNotes={() => setNotesNodeId(n.id)}
+                  onOpenRightPanel={(tab) =>
+                    setRightPanelState({ nodeId: n.id, tab })
+                  }
                   onOpenSettings={() => setSettingsNodeId(n.id)}
                   onToggleComplete={() =>
                     onChange({
@@ -756,19 +761,23 @@ export default function CanvasBoard({
         </div>
       </div>
 
-      {notesNodeId && funnel.nodes.find((n) => n.id === notesNodeId) && (
-        <RightPanel
-          node={funnel.nodes.find((n) => n.id === notesNodeId)!}
-          funnel={funnel}
-          onChange={(n) =>
-            onChange({
-              ...funnel,
-              nodes: funnel.nodes.map((node) => (node.id === n.id ? n : node)),
-            })
-          }
-          onClose={() => setNotesNodeId(null)}
-        />
-      )}
+      {rightPanelState &&
+        funnel.nodes.find((n) => n.id === rightPanelState.nodeId) && (
+          <RightPanel
+            node={funnel.nodes.find((n) => n.id === rightPanelState.nodeId)!}
+            funnel={funnel}
+            defaultTab={rightPanelState.tab}
+            onChange={(n) =>
+              onChange({
+                ...funnel,
+                nodes: funnel.nodes.map((node) =>
+                  node.id === n.id ? n : node,
+                ),
+              })
+            }
+            onClose={() => setRightPanelState(null)}
+          />
+        )}
       <NodeSettingsModal
         node={
           settingsNodeId

@@ -19,6 +19,11 @@ import {
   ExternalLink,
   Image as ImageIcon,
 } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 const icons: Record<string, any> = {
   Ad: Megaphone,
@@ -47,7 +52,7 @@ type NodeItemProps = {
   onMove: (x: number, y: number) => void
   onMoveEnd: (x: number, y: number) => void
   scale: number
-  onOpenNotes: () => void
+  onOpenRightPanel: (tab: string) => void
   onOpenSettings: () => void
   onToggleComplete: () => void
   onDelete: () => void
@@ -68,7 +73,7 @@ export default function NodeItem({
   onMove,
   onMoveEnd,
   scale,
-  onOpenNotes,
+  onOpenRightPanel,
   onOpenSettings,
   onToggleComplete,
   onDelete,
@@ -81,7 +86,12 @@ export default function NodeItem({
   const [isHovered, setIsHovered] = useState(false)
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (isPanMode || (e.target as HTMLElement).closest('button')) return
+    if (
+      isPanMode ||
+      (e.target as HTMLElement).closest('button') ||
+      (e.target as HTMLElement).closest('.interactive-icon')
+    )
+      return
     e.stopPropagation()
     const target = e.currentTarget as HTMLElement
     target.setPointerCapture(e.pointerId)
@@ -198,7 +208,7 @@ export default function NodeItem({
   }
 
   const Icon = icons[node.type] || icons.Default
-  const circumference = 2 * Math.PI * 8
+  const circumference = 2 * Math.PI * 10
   const strokeDashoffset =
     taskProgress.total > 0
       ? circumference -
@@ -208,11 +218,14 @@ export default function NodeItem({
   return (
     <div
       className={cn(
-        'absolute top-0 left-0 pointer-events-auto w-[260px] bg-white rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 p-5 z-10 flex flex-col gap-2 group select-none transition-all',
+        'absolute top-0 left-0 pointer-events-auto w-[260px] rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border p-5 z-10 flex flex-col gap-2 group select-none transition-all',
         (selected || isHovered) &&
-          'shadow-[0_8px_30px_rgba(0,0,0,0.06)] border-slate-200 ring-4 ring-slate-50',
+          'shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-4 ring-slate-50',
         isDragging &&
           'opacity-90 scale-[1.02] z-50 shadow-[0_12px_40px_rgba(0,0,0,0.1)] ring-4 ring-primary/10 border-primary/20',
+        node.data.isTaskMode && node.data.isCompleted
+          ? 'bg-green-50 border-green-200'
+          : 'bg-white border-slate-100',
       )}
       style={{
         transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
@@ -231,47 +244,105 @@ export default function NodeItem({
       onDrop={handleDrop}
       data-node-id={node.id}
     >
-      <div className="absolute -top-3 left-4 flex gap-1.5 z-20">
+      <div className="absolute -top-3 -left-3 flex gap-2 z-20">
         {(node.data.linkedDocumentIds?.length ?? 0) > 0 && (
-          <div className="w-6 h-6 rounded-full bg-blue-100 border border-blue-200 text-blue-600 flex items-center justify-center shadow-sm">
-            <FileText size={12} strokeWidth={2.5} />
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className="interactive-icon w-8 h-8 rounded-full bg-blue-50 border-2 border-white text-blue-600 flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpenRightPanel('content')
+                }}
+              >
+                <FileText size={14} strokeWidth={2.5} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Ver Documentos</TooltipContent>
+          </Tooltip>
         )}
         {(node.data.linkedAssetIds?.length ?? 0) > 0 && (
-          <div className="w-6 h-6 rounded-full bg-purple-100 border border-purple-200 text-purple-600 flex items-center justify-center shadow-sm">
-            <ImageIcon size={12} strokeWidth={2.5} />
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className="interactive-icon w-8 h-8 rounded-full bg-purple-50 border-2 border-white text-purple-600 flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpenRightPanel('assets')
+                }}
+              >
+                <ImageIcon size={14} strokeWidth={2.5} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Ver Assets</TooltipContent>
+          </Tooltip>
         )}
       </div>
 
-      {taskProgress.total > 0 && (
-        <div className="absolute -top-3 right-6 w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center z-20 border border-slate-100">
-          <svg width="20" height="20" className="transform -rotate-90">
-            <circle
-              cx="10"
-              cy="10"
-              r="8"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="transparent"
-              className="text-slate-100"
-            />
-            <circle
-              cx="10"
-              cy="10"
-              r="8"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              className="text-green-500 transition-all duration-500"
-            />
-          </svg>
-        </div>
-      )}
+      <div className="absolute -top-3 -right-3 flex gap-2 z-20">
+        {taskProgress.total > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className="interactive-icon w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center border-2 border-white cursor-pointer hover:scale-110 transition-transform"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpenRightPanel('tasks')
+                }}
+              >
+                <svg width="24" height="24" className="transform -rotate-90">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    fill="transparent"
+                    className="text-slate-100"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    fill="transparent"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    className="text-blue-500 transition-all duration-500"
+                  />
+                </svg>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Progresso das Tarefas</TooltipContent>
+          </Tooltip>
+        )}
+        {node.data.isTaskMode && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className={cn(
+                  'interactive-icon w-8 h-8 rounded-full shadow-sm flex items-center justify-center border-2 cursor-pointer hover:scale-110 transition-all',
+                  node.data.isCompleted
+                    ? 'bg-green-500 border-white text-white'
+                    : 'bg-white border-slate-200 text-slate-300 hover:text-slate-400',
+                )}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleComplete()
+                }}
+              >
+                <Check size={16} strokeWidth={3} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {node.data.isCompleted ? 'Concluído' : 'Marcar como concluído'}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
 
-      <div className="flex items-center gap-2 text-slate-500 mb-1">
+      <div className="flex items-center gap-2 text-slate-500 mb-1 mt-1">
         <Icon size={16} strokeWidth={1.5} />
         <span className="text-[13px] font-medium tracking-wide">
           {node.type}
@@ -288,7 +359,7 @@ export default function NodeItem({
 
       <div
         className={cn(
-          'absolute -top-3 -right-3 flex items-center gap-1.5 transition-opacity',
+          'absolute -top-4 right-10 flex items-center gap-1.5 transition-opacity',
           selected || isHovered
             ? 'opacity-100'
             : 'opacity-0 pointer-events-none',
@@ -297,18 +368,18 @@ export default function NodeItem({
         <button
           onClick={(e) => {
             e.stopPropagation()
-            onOpenNotes()
+            onOpenSettings()
           }}
-          className="w-8 h-8 bg-white border border-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 shadow-sm transition-transform hover:scale-105"
+          className="interactive-icon w-8 h-8 bg-white border border-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 shadow-sm transition-transform hover:scale-105"
         >
-          <FileText size={14} strokeWidth={2} />
+          <Settings size={14} strokeWidth={2} />
         </button>
         <button
           onClick={(e) => {
             e.stopPropagation()
             onDelete()
           }}
-          className="w-8 h-8 bg-white border border-slate-100 rounded-full flex items-center justify-center text-red-500 hover:text-red-600 shadow-sm transition-transform hover:scale-105"
+          className="interactive-icon w-8 h-8 bg-white border border-slate-100 rounded-full flex items-center justify-center text-red-500 hover:text-red-600 shadow-sm transition-transform hover:scale-105"
         >
           <Trash2 size={14} strokeWidth={2} />
         </button>
@@ -316,13 +387,13 @@ export default function NodeItem({
 
       {!isPanMode && (
         <div
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center cursor-crosshair z-20 group/port interactive-icon"
           onPointerDown={(e) => {
             e.stopPropagation()
             onEdgeDragStart(node.id, e)
           }}
         >
-          <div className="w-3 h-3 rounded-full bg-white border-[3px] border-slate-300 group-hover/port:border-purple-500 group-hover/port:scale-125 transition-all shadow-sm" />
+          <div className="w-3 h-3 rounded-full bg-white border-2 border-slate-200 group-hover/port:border-purple-500 group-hover/port:scale-125 transition-all shadow-sm" />
         </div>
       )}
 
@@ -332,7 +403,7 @@ export default function NodeItem({
             e.stopPropagation()
             onAddChild()
           }}
-          className="h-8 px-3 bg-white border border-slate-100 rounded-xl shadow-sm flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800 hover:border-slate-200 transition-all font-medium text-[11px]"
+          className="interactive-icon h-8 px-4 bg-white border border-slate-100 rounded-full shadow-sm flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800 hover:border-slate-200 transition-all font-medium text-[12px]"
         >
           <ExternalLink size={12} strokeWidth={2} /> Exit
         </button>
