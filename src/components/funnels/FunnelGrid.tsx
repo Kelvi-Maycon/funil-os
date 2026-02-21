@@ -122,7 +122,7 @@ export default function FunnelGrid({
           onClick={() => navigate(`/canvas/${f.id}`)}
         >
           <CardHeader className="flex flex-row items-start gap-3 space-y-0 p-4 pb-2 z-10">
-            <div className="w-10 h-10 rounded-lg bg-purple-100/50 flex items-center justify-center text-purple-600 shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-orange-100/50 flex items-center justify-center text-orange-600 shrink-0">
               <Network size={20} />
             </div>
             <div className="flex flex-col flex-1 overflow-hidden pr-6">

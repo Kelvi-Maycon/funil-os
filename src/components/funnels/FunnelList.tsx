@@ -146,7 +146,7 @@ export default function FunnelList({
               onClick={() => navigate(`/canvas/${f.id}`)}
             >
               <TableCell className="font-medium flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-primary shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-orange-100/50 flex items-center justify-center text-orange-600 shrink-0">
                   <Network size={20} />
                 </div>
                 {f.name}
