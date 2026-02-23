@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { generateId } from '@/lib/generateId'
 import { useNavigate } from 'react-router-dom'
 import {
   Sheet,
@@ -67,7 +68,7 @@ export default function TaskDetailSheet({
 
   const addSubtask = () => {
     const newSt: Subtask = {
-      id: Date.now().toString(),
+      id: generateId('st'),
       title: '',
       isCompleted: false,
     }

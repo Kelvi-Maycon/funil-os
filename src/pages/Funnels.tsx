@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+import { generateId } from '@/lib/generateId'
 import useFunnelStore from '@/stores/useFunnelStore'
 import useFunnelFolderStore from '@/stores/useFunnelFolderStore'
 import useProjectStore from '@/stores/useProjectStore'
@@ -31,6 +32,7 @@ import { useToast } from '@/hooks/use-toast'
 import FunnelGrid from '@/components/funnels/FunnelGrid'
 import FunnelList from '@/components/funnels/FunnelList'
 import { ViewToggle } from '@/components/folders/FolderComponents'
+import { Search } from 'lucide-react'
 
 export default function Funnels() {
   const [funnels, setFunnels] = useFunnelStore()
@@ -41,6 +43,7 @@ export default function Funnels() {
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [search, setSearch] = useState('')
 
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -57,12 +60,20 @@ export default function Funnels() {
   const [targetFolderId, setTargetFolderId] = useState<string | null>('root')
 
   const currentFolders = useMemo(
-    () => folders.filter((f) => f.parentId === currentFolderId),
-    [folders, currentFolderId],
+    () => {
+      const base = folders.filter((f) => f.parentId === currentFolderId)
+      if (search) return base.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
+      return base
+    },
+    [folders, currentFolderId, search],
   )
   const currentFunnels = useMemo(
-    () => funnels.filter((f) => (f.folderId || null) === currentFolderId),
-    [funnels, currentFolderId],
+    () => {
+      const base = funnels.filter((f) => (f.folderId || null) === currentFolderId)
+      if (search) return base.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
+      return base
+    },
+    [funnels, currentFolderId, search],
   )
 
   const breadcrumbs = useMemo(() => {
@@ -88,7 +99,7 @@ export default function Funnels() {
     e.preventDefault()
     if (!newFolderName.trim()) return
     const newFolder = {
-      id: `ff_${Date.now()}`,
+      id: generateId('ff'),
       name: newFolderName,
       parentId: currentFolderId,
       createdAt: new Date().toISOString(),
@@ -267,6 +278,19 @@ export default function Funnels() {
           ))}
         </BreadcrumbList>
       </Breadcrumb>
+
+      <div className="relative max-w-md">
+        <Search
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          size={18}
+        />
+        <Input
+          placeholder="Buscar funis..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10 bg-card"
+        />
+      </div>
 
       {viewMode === 'grid' ? (
         <FunnelGrid

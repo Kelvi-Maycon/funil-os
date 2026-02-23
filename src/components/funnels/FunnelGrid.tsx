@@ -135,9 +135,15 @@ export default function FunnelGrid({
             </div>
           </CardHeader>
           <CardContent className="p-4 pt-2 z-10 flex justify-between items-center mt-auto">
-            <Badge variant="outline" className="bg-background">
+            <Badge variant="outline" className={
+              f.status === 'Ativo' ? 'bg-green-100 text-green-700 border-green-200' :
+                f.status === 'Pausado' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                  f.status === 'Concluído' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                    'bg-slate-100 text-slate-600 border-slate-200'
+            }>
               {f.status}
             </Badge>
+            <span className="text-xs text-muted-foreground">{f.nodes.length} blocos</span>
           </CardContent>
           <div className="absolute top-3 right-2 z-20">
             <ActionMenu item={f} type="funnel" />

@@ -1,4 +1,5 @@
-import { Node, Funnel, Task, Asset } from '@/types'
+import { Node, Funnel, Task, Resource } from '@/types'
+import { generateId } from '@/lib/generateId'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,7 +13,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import useDocumentStore from '@/stores/useDocumentStore'
 import useTaskStore from '@/stores/useTaskStore'
-import useAssetStore from '@/stores/useAssetStore'
+import useResourceStore from '@/stores/useResourceStore'
 import {
   Select,
   SelectContent,
@@ -38,9 +39,9 @@ export default function RightPanel({
 }) {
   const [docs, setDocs] = useDocumentStore()
   const [tasks, setTasks] = useTaskStore()
-  const [assets, setAssets] = useAssetStore()
+  const [resources, setResources] = useResourceStore()
   const [activeTab, setActiveTab] = useState(defaultTab)
-  const [inspectAsset, setInspectAsset] = useState<Asset | null>(null)
+  const [inspectResource, setInspectResource] = useState<Resource | null>(null)
 
   useEffect(() => {
     setActiveTab(defaultTab)
@@ -52,7 +53,7 @@ export default function RightPanel({
   const linkedTasks = tasks.filter(
     (t) => t.nodeId === node.id || node.data.linkedTaskIds?.includes(t.id),
   )
-  const linkedAssets = assets.filter((a) =>
+  const linkedResources = resources.filter((a) =>
     node.data.linkedAssetIds?.includes(a.id),
   )
 
@@ -67,7 +68,7 @@ export default function RightPanel({
       t.nodeId !== node.id &&
       !node.data.linkedTaskIds?.includes(t.id),
   )
-  const projAssets = assets.filter(
+  const projResources = resources.filter(
     (a) =>
       a.projectId === funnel.projectId &&
       !node.data.linkedAssetIds?.includes(a.id),
@@ -102,17 +103,11 @@ export default function RightPanel({
           t.id === id ? { ...t, funnelId: funnel.id, nodeId: node.id } : t,
         ),
       )
-    if (type === 'asset')
-      setAssets(
-        assets.map((a) =>
-          a.id === id ? { ...a, funnelId: funnel.id, nodeId: node.id } : a,
-        ),
-      )
   }
 
   const handleCreateTask = () => {
     const newTask: Task = {
-      id: `t_${Date.now()}`,
+      id: generateId('t'),
       title: 'Nova Tarefa do Nó',
       projectId: funnel.projectId,
       funnelId: funnel.id,
@@ -167,14 +162,14 @@ export default function RightPanel({
           <TabsTrigger value="tasks" className="text-xs rounded-lg">
             Tarefas
           </TabsTrigger>
-          <TabsTrigger value="assets" className="text-xs rounded-lg">
-            Assets
+          <TabsTrigger value="resources" className="text-xs rounded-lg">
+            Recursos
           </TabsTrigger>
         </TabsList>
 
         <TabsContent
           value="details"
-          className="flex-1 overflow-auto p-8 space-y-6 m-0 border-none outline-none"
+          className="flex-1 overflow-auto p-8 space-y-6 m-0 border-none outline-none no-scrollbar"
         >
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
@@ -212,7 +207,7 @@ export default function RightPanel({
 
         <TabsContent
           value="content"
-          className="flex-1 overflow-auto p-8 space-y-6 m-0 border-none outline-none"
+          className="flex-1 overflow-auto p-8 space-y-6 m-0 border-none outline-none no-scrollbar"
         >
           <div className="flex items-center gap-2">
             <Select onValueChange={(val) => linkResource('doc', val)}>
@@ -269,7 +264,7 @@ export default function RightPanel({
 
         <TabsContent
           value="tasks"
-          className="flex-1 overflow-auto p-8 space-y-6 m-0 border-none outline-none"
+          className="flex-1 overflow-auto p-8 space-y-6 m-0 border-none outline-none no-scrollbar"
         >
           <div className="flex items-center gap-2">
             <Select onValueChange={(val) => linkResource('task', val)}>
@@ -320,70 +315,76 @@ export default function RightPanel({
         </TabsContent>
 
         <TabsContent
-          value="assets"
-          className="flex-1 overflow-auto p-8 space-y-6 m-0 border-none outline-none"
+          value="resources"
+          className="flex-1 overflow-auto p-8 space-y-6 m-0 border-none outline-none no-scrollbar"
         >
           <div className="flex items-center gap-2">
             <Select onValueChange={(val) => linkResource('asset', val)}>
               <SelectTrigger className="flex-1 bg-white">
-                <SelectValue placeholder="Vincular Asset..." />
+                <SelectValue placeholder="Vincular Recurso..." />
               </SelectTrigger>
               <SelectContent>
-                {projAssets.map((a) => (
+                {projResources.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
                     <div className="flex items-center gap-2">
                       <ImageIcon size={14} />
-                      {a.name}
+                      {a.title}
                     </div>
                   </SelectItem>
                 ))}
-                {projAssets.length === 0 && (
+                {projResources.length === 0 && (
                   <div className="p-2 text-sm text-muted-foreground text-center">
-                    Nenhum asset disponível
+                    Nenhum recurso disponível
                   </div>
                 )}
               </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {linkedAssets.map((a) => (
+            {linkedResources.map((a) => (
               <div
                 key={a.id}
                 className="rounded-xl overflow-hidden border bg-white shadow-sm group relative cursor-pointer"
-                onClick={() => setInspectAsset(a)}
+                onClick={() => a.type === 'image' && setInspectResource(a)}
               >
-                <img
-                  src={a.url}
-                  alt={a.name}
-                  className="w-full aspect-video object-cover"
-                />
+                {a.type === 'image' ? (
+                  <img
+                    src={a.content}
+                    alt={a.title}
+                    className="w-full aspect-video object-cover"
+                  />
+                ) : (
+                  <div className="p-3 text-sm text-muted-foreground line-clamp-3 aspect-video flex items-center">
+                    {a.content}
+                  </div>
+                )}
                 <div className="p-2 text-xs font-medium truncate border-t">
-                  {a.name}
+                  {a.title}
                 </div>
               </div>
             ))}
           </div>
-          {linkedAssets.length === 0 && (
+          {linkedResources.length === 0 && (
             <div className="text-center text-sm text-slate-400 py-8">
-              Nenhum asset vinculado.
+              Nenhum recurso vinculado.
             </div>
           )}
         </TabsContent>
       </Tabs>
 
       <Dialog
-        open={!!inspectAsset}
-        onOpenChange={(open) => !open && setInspectAsset(null)}
+        open={!!inspectResource}
+        onOpenChange={(open) => !open && setInspectResource(null)}
       >
         <DialogContent className="max-w-7xl w-full h-[90vh] p-0 bg-black/95 border-none shadow-2xl flex flex-col overflow-hidden rounded-none sm:rounded-none">
-          <DialogTitle className="sr-only">Inspeção de Asset</DialogTitle>
+          <DialogTitle className="sr-only">Inspeção de Recurso</DialogTitle>
           <div className="absolute top-6 left-6 text-white font-bold text-xl z-10 drop-shadow-md">
-            {inspectAsset?.name}
+            {inspectResource?.title}
           </div>
           <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
             <img
-              src={inspectAsset?.url}
-              alt={inspectAsset?.name}
+              src={inspectResource?.content}
+              alt={inspectResource?.title}
               className="max-w-full max-h-full object-contain"
             />
           </div>

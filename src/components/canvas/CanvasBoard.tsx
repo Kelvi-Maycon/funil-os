@@ -1,10 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Funnel, Node, Edge, NodeData, Asset } from '@/types'
+import { Funnel, Node, Edge, NodeData, Resource } from '@/types'
+import { generateId } from '@/lib/generateId'
 import BlockPalette from './BlockPalette'
 import NodeItem from './NodeItem'
 import RightPanel from './RightPanel'
 import { NodeSettingsModal } from './NodeSettingsModal'
+import { useCanvasHistory } from '@/hooks/useCanvasHistory'
+import { useCanvasTransform } from '@/hooks/useCanvasTransform'
+import { useCanvasSelection } from '@/hooks/useCanvasSelection'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import {
   Plus,
   Minus,
@@ -20,6 +25,8 @@ import {
   Diamond,
   Circle,
   X,
+  Undo2,
+  Redo2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,7 +37,7 @@ import {
 import { cn } from '@/lib/utils'
 import useTaskStore from '@/stores/useTaskStore'
 import useDocumentStore from '@/stores/useDocumentStore'
-import useAssetStore from '@/stores/useAssetStore'
+import useResourceStore from '@/stores/useResourceStore'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 
@@ -93,24 +100,44 @@ export default function CanvasBoard({
   const [searchParams, setSearchParams] = useSearchParams()
   const [tasks, setTasks] = useTaskStore()
   const [docs, setDocs] = useDocumentStore()
-  const [assets, setAssets] = useAssetStore()
+  const [resources, setResources] = useResourceStore()
   const { toast } = useToast()
+  const { pushState, undo, redo, canUndo, canRedo } = useCanvasHistory(funnel)
+  const [nodeToDelete, setNodeToDelete] = useState<string | 'selected' | null>(null)
 
-  const [selectedNodes, setSelectedNodes] = useState<string[]>([])
-  const [selectedEdge, setSelectedEdge] = useState<string | null>(null)
+  // Wrap onChange to push state for undo/redo
+  const onChangeWithHistory = useCallback(
+    (newFunnel: Funnel) => {
+      pushState(funnel)
+      onChange(newFunnel)
+    },
+    [funnel, onChange, pushState],
+  )
+
+  const {
+    selectedNodes,
+    setSelectedNodes,
+    selectedEdge,
+    setSelectedEdge,
+    selectionBox,
+    setSelectionBox,
+  } = useCanvasSelection()
+
+  const {
+    transform,
+    setTransform,
+    isPanning,
+    setIsPanning,
+    lastPan,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+  } = useCanvasTransform(1, hideHeader)
+
   const [rightPanelState, setRightPanelState] = useState<{
     nodeId: string
     tab: string
   } | null>(null)
-  const [settingsNodeId, setSettingsNodeId] = useState<string | null>(null)
-  const boardRef = useRef<HTMLDivElement>(null)
-
-  const [transform, setTransform] = useState({
-    x: hideHeader ? 300 : 400,
-    y: 150,
-    scale: 1,
-  })
-  const [isPanning, setIsPanning] = useState(false)
   const [isSpacePressed, setIsSpacePressed] = useState(false)
   const [activeTool, setActiveTool] = useState<
     'Select' | 'Pan' | 'Square' | 'Diamond' | 'Circle'
@@ -142,14 +169,9 @@ export default function CanvasBoard({
     currentX: number
     currentY: number
   } | null>(null)
-  const [selectionBox, setSelectionBox] = useState<{
-    startX: number
-    startY: number
-    currentX: number
-    currentY: number
-  } | null>(null)
 
-  const lastPan = useRef({ x: 0, y: 0 })
+  const [settingsNodeId, setSettingsNodeId] = useState<string | null>(null)
+  const boardRef = useRef<HTMLDivElement>(null)
 
   const targetNodeId = searchParams.get('nodeId')
   useEffect(() => {
@@ -172,7 +194,7 @@ export default function CanvasBoard({
 
   const handleGroupSelected = useCallback(() => {
     if (selectedNodes.length < 2) return
-    const groupId = `g_${Date.now()}`
+    const groupId = generateId('g')
     onChange({
       ...funnel,
       nodes: funnel.nodes.map((n) =>
@@ -184,7 +206,7 @@ export default function CanvasBoard({
 
   const handleDeleteSelected = useCallback(() => {
     if (selectedNodes.length === 0) return
-    onChange({
+    onChangeWithHistory({
       ...funnel,
       nodes: funnel.nodes.filter((n) => !selectedNodes.includes(n.id)),
       edges: funnel.edges.filter(
@@ -198,7 +220,25 @@ export default function CanvasBoard({
       setRightPanelState(null)
     if (settingsNodeId && selectedNodes.includes(settingsNodeId))
       setSettingsNodeId(null)
-  }, [funnel, selectedNodes, onChange, rightPanelState, settingsNodeId])
+  }, [funnel, selectedNodes, onChangeWithHistory, rightPanelState, settingsNodeId])
+
+  const handleConfirmDelete = useCallback(() => {
+    if (nodeToDelete === 'selected') {
+      handleDeleteSelected()
+    } else if (nodeToDelete && nodeToDelete !== 'selected') {
+      onChangeWithHistory({
+        ...funnel,
+        nodes: funnel.nodes.filter((x) => x.id !== nodeToDelete),
+        edges: funnel.edges.filter(
+          (e) => e.source !== nodeToDelete && e.target !== nodeToDelete,
+        ),
+      })
+      if (rightPanelState?.nodeId === nodeToDelete)
+        setRightPanelState(null)
+      if (settingsNodeId === nodeToDelete) setSettingsNodeId(null)
+    }
+    setNodeToDelete(null)
+  }, [nodeToDelete, handleDeleteSelected, funnel, onChangeWithHistory, rightPanelState, settingsNodeId])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -232,12 +272,22 @@ export default function CanvasBoard({
           break
         case 'delete':
         case 'backspace':
-          handleDeleteSelected()
+          if (selectedNodes.length > 0) setNodeToDelete('selected')
           break
         case 'g':
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault()
             handleGroupSelected()
+          }
+          break
+        case 'z':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            if (e.shiftKey) {
+              redo(funnel, onChange)
+            } else {
+              undo(funnel, onChange)
+            }
           }
           break
       }
@@ -261,25 +311,26 @@ export default function CanvasBoard({
       if (!items) return
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
-          const newAsset: Asset = {
-            id: `a_${Date.now()}_${Math.random()}`,
+          const newAsset: Resource = {
+            id: generateId('a'),
             projectId: funnel.projectId,
-            name: 'Pasted Image ' + format(new Date(), 'HH:mm:ss'),
-            url: 'https://img.usecurling.com/p/800/600?q=wireframe&color=gray',
+            title: 'Pasted Image ' + format(new Date(), 'HH:mm:ss'),
+            content: 'https://img.usecurling.com/p/800/600?q=wireframe&color=gray',
             type: 'image',
-            category: 'Upload',
             tags: ['pasted', 'canvas'],
             folderId: null,
+            isPinned: false,
+            createdAt: new Date().toISOString(),
           }
-          setAssets((prev) => [newAsset, ...prev])
+          setResources((prev) => [newAsset, ...prev])
 
           const newNode: Node = {
-            id: `n_${Date.now()}`,
+            id: generateId('n'),
             type: 'Image',
             x: -transform.x / transform.scale + 400,
             y: -transform.y / transform.scale + 200,
             data: {
-              name: newAsset.url,
+              name: newAsset.content,
               status: '',
               subtitle: '',
               linkedAssetIds: [newAsset.id],
@@ -293,7 +344,7 @@ export default function CanvasBoard({
     }
     window.addEventListener('paste', handlePaste)
     return () => window.removeEventListener('paste', handlePaste)
-  }, [funnel, setAssets, transform, onChange, toast])
+  }, [funnel, setResources, transform, onChange, toast])
 
   useEffect(() => {
     const el = boardRef.current
@@ -339,7 +390,7 @@ export default function CanvasBoard({
     if (activeTool === 'Pan' || isMiddleClick || isSpaceRightClick) {
       setIsPanning(true)
       lastPan.current = { x: e.clientX, y: e.clientY }
-      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+        ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
       document.body.style.userSelect = 'none'
       return
     }
@@ -359,7 +410,7 @@ export default function CanvasBoard({
           currentX: x,
           currentY: y,
         })
-        ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+          ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
         e.stopPropagation()
         return
       }
@@ -370,7 +421,7 @@ export default function CanvasBoard({
         let x = (e.clientX - rect.left - transform.x) / transform.scale
         let y = (e.clientY - rect.top - transform.y) / transform.scale
         setSelectionBox({ startX: x, startY: y, currentX: x, currentY: y })
-        ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+          ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
       }
     }
   }
@@ -437,7 +488,7 @@ export default function CanvasBoard({
       const y = Math.min(creatingShape.startY, creatingShape.currentY)
 
       if (width > 10 && height > 10) {
-        const newNodeId = `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const newNodeId = generateId('n')
         onChange({
           ...funnel,
           nodes: [
@@ -465,7 +516,7 @@ export default function CanvasBoard({
       setCreatingShape(null)
       setActiveTool('Select')
       try {
-        ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+        ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
       } catch (err) {
         /* ignore */
       }
@@ -475,7 +526,7 @@ export default function CanvasBoard({
     if (selectionBox) {
       setSelectionBox(null)
       try {
-        ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+        ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
       } catch (err) {
         /* ignore */
       }
@@ -485,7 +536,7 @@ export default function CanvasBoard({
     if (isPanning) {
       setIsPanning(false)
       try {
-        ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+        ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
       } catch (err) {
         /* ignore */
       }
@@ -505,7 +556,7 @@ export default function CanvasBoard({
       x = Math.round(x / 28) * 28
       y = Math.round(y / 28) * 28
     }
-    const newNodeId = `n_${Date.now()}`
+    const newNodeId = generateId('n')
     onChange({
       ...funnel,
       nodes: [
@@ -530,7 +581,8 @@ export default function CanvasBoard({
       x: (cx - rect.left - transform.x) / transform.scale,
       y: (cy - rect.top - transform.y) / transform.scale,
     })
-    setDrawingEdge({ source: nodeId, ...getCoords(e.clientX, e.clientY) })
+    const coords = getCoords(e.clientX, e.clientY)
+    setDrawingEdge({ source: nodeId, currentX: coords.x, currentY: coords.y })
 
     const onMove = (ev: PointerEvent) => {
       const coords = getCoords(ev.clientX, ev.clientY)
@@ -555,7 +607,7 @@ export default function CanvasBoard({
             ...funnel,
             edges: [
               ...funnel.edges,
-              { id: `e_${Date.now()}`, source: nodeId, target: targetId },
+              { id: generateId('e'), source: nodeId, target: targetId },
             ],
           })
         }
@@ -573,7 +625,7 @@ export default function CanvasBoard({
   const handleAddChild = (parentId: string) => {
     const parent = funnel.nodes.find((n) => n.id === parentId)
     if (!parent) return
-    const newId = `n_${Date.now()}`
+    const newId = generateId('n')
     let newX = parent.x + 350,
       newY = parent.y
     if (snapToGrid) {
@@ -594,13 +646,13 @@ export default function CanvasBoard({
       ],
       edges: [
         ...funnel.edges,
-        { id: `e_${Date.now()}`, source: parentId, target: newId },
+        { id: generateId('e'), source: parentId, target: newId },
       ],
     })
   }
 
   const handleAddAnnotation = (type: 'Text' | 'Image', name: string) => {
-    const newNodeId = `n_${Date.now()}`
+    const newNodeId = generateId('n')
     onChange({
       ...funnel,
       nodes: [
@@ -648,9 +700,9 @@ export default function CanvasBoard({
         ),
       )
     else if (type === 'asset')
-      setAssets(
-        assets.map((a) =>
-          a.id === id ? { ...a, funnelId: funnel.id, nodeId } : a,
+      setResources(
+        resources.map((a) =>
+          a.id === id ? { ...a, projectId: funnel.projectId } : a,
         ),
       )
   }
@@ -840,14 +892,12 @@ export default function CanvasBoard({
           variant="ghost"
           size="icon"
           className="w-8 h-8 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-          onClick={() =>
-            setTransform((p) => ({ ...p, scale: Math.max(0.1, p.scale - 0.1) }))
-          }
+          onClick={zoomOut}
         >
           <Minus size={16} />
         </Button>
         <button
-          onClick={() => setTransform({ x: 400, y: 150, scale: 1 })}
+          onClick={resetZoom}
           className="text-[13px] font-semibold text-slate-600 px-3 min-w-[3.5rem] hover:text-primary transition-colors text-center"
         >
           {Math.round(transform.scale * 100)}%
@@ -856,9 +906,7 @@ export default function CanvasBoard({
           variant="ghost"
           size="icon"
           className="w-8 h-8 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-          onClick={() =>
-            setTransform((p) => ({ ...p, scale: Math.min(3, p.scale + 0.1) }))
-          }
+          onClick={zoomIn}
         >
           <Plus size={16} />
         </Button>
@@ -966,8 +1014,8 @@ export default function CanvasBoard({
                   ? selectedNodeObj.type === 'FloatingText'
                     ? 'Text Style'
                     : ['Square', 'Diamond', 'Circle'].includes(
-                          selectedNodeObj.type,
-                        )
+                      selectedNodeObj.type,
+                    )
                       ? 'SHAPE STYLE'
                       : 'NODE STYLE'
                   : 'Line Style'}
@@ -1489,7 +1537,7 @@ export default function CanvasBoard({
               x = Math.round(x / 28) * 28
               y = Math.round(y / 28) * 28
             }
-            const newNodeId = `n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            const newNodeId = generateId('n')
             onChange({
               ...funnel,
               nodes: [
@@ -1710,19 +1758,8 @@ export default function CanvasBoard({
                   }}
                   onAddChild={() => handleAddChild(n.id)}
                   onDelete={() => {
-                    if (selectedNodes.includes(n.id)) handleDeleteSelected()
-                    else {
-                      onChange({
-                        ...funnel,
-                        nodes: funnel.nodes.filter((x) => x.id !== n.id),
-                        edges: funnel.edges.filter(
-                          (e) => e.source !== n.id && e.target !== n.id,
-                        ),
-                      })
-                      if (rightPanelState?.nodeId === n.id)
-                        setRightPanelState(null)
-                      if (settingsNodeId === n.id) setSettingsNodeId(null)
-                    }
+                    if (selectedNodes.includes(n.id)) setNodeToDelete('selected')
+                    else setNodeToDelete(n.id)
                   }}
                   onOpenRightPanel={(tab) =>
                     setRightPanelState({ nodeId: n.id, tab })
@@ -1734,12 +1771,12 @@ export default function CanvasBoard({
                       nodes: funnel.nodes.map((node) =>
                         node.id === n.id
                           ? {
-                              ...node,
-                              data: {
-                                ...node.data,
-                                isCompleted: !node.data.isCompleted,
-                              },
-                            }
+                            ...node,
+                            data: {
+                              ...node.data,
+                              isCompleted: !node.data.isCompleted,
+                            },
+                          }
                           : node,
                       ),
                     })
@@ -1800,6 +1837,16 @@ export default function CanvasBoard({
           })
           setSettingsNodeId(null)
         }}
+      />
+
+      <ConfirmDialog
+        open={!!nodeToDelete}
+        onOpenChange={(open) => !open && setNodeToDelete(null)}
+        title="Excluir Elementos?"
+        description="Esta ação removerá os elementos selecionados do canvas. Deseja continuar?"
+        confirmLabel="Excluir"
+        variant="destructive"
+        onConfirm={handleConfirmDelete}
       />
     </div>
   )

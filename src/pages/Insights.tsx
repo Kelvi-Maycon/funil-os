@@ -22,6 +22,7 @@ import {
   Lightbulb,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { generateId } from '@/lib/generateId'
 import { format } from 'date-fns'
 import {
   ViewToggle,
@@ -61,7 +62,7 @@ export default function Insights() {
     setFolders([
       ...allFolders,
       {
-        id: `f_${Date.now()}`,
+        id: generateId('f'),
         module: 'insight',
         name,
         parentId: currentFolderId,

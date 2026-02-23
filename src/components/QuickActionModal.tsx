@@ -4,9 +4,18 @@ import useProjectStore from '@/stores/useProjectStore'
 import useTaskStore from '@/stores/useTaskStore'
 import useFunnelStore from '@/stores/useFunnelStore'
 import useDocumentStore from '@/stores/useDocumentStore'
-import useAssetStore from '@/stores/useAssetStore'
-import useInsightStore from '@/stores/useInsightStore'
-import useSwipeStore from '@/stores/useSwipeStore'
+import { generateId } from '@/lib/generateId'
+import { Task, Funnel, Document } from '@/types'
+
+export type QuickActionFormData = {
+  id?: string
+  projectId?: string | null
+  title?: string
+  name?: string
+  description?: string
+  content?: string
+  url?: string
+}
 
 import {
   Dialog,
@@ -35,14 +44,11 @@ export default function QuickActionModal() {
   const [tasks, setTasks] = useTaskStore()
   const [funnels, setFunnels] = useFunnelStore()
   const [docs, setDocs] = useDocumentStore()
-  const [assets, setAssets] = useAssetStore()
-  const [insights, setInsights] = useInsightStore()
-  const [swipes, setSwipes] = useSwipeStore()
 
   const { toast } = useToast()
   const navigate = useNavigate()
 
-  const [formData, setFormData] = useState<any>({ projectId: 'none' })
+  const [formData, setFormData] = useState<QuickActionFormData>({ projectId: 'none' })
 
   useEffect(() => {
     if (!state) return
@@ -50,13 +56,6 @@ export default function QuickActionModal() {
       let item: any = null
       if (state.type === 'canvas')
         item = funnels.find((f) => f.id === state.itemId)
-      if (state.type === 'asset')
-        item = assets.find((a) => a.id === state.itemId)
-      if (state.type === 'insight')
-        item = insights.find((i) => i.id === state.itemId)
-      if (state.type === 'swipe')
-        item = swipes.find((s) => s.id === state.itemId)
-      if (state.type === 'task') item = tasks.find((t) => t.id === state.itemId)
       if (state.type === 'document')
         item = docs.find((d) => d.id === state.itemId)
 
@@ -66,7 +65,7 @@ export default function QuickActionModal() {
     } else {
       setFormData({ projectId: state.defaultProjectId || 'none' })
     }
-  }, [state, funnels, assets, insights, swipes, tasks, docs])
+  }, [state, funnels, tasks, docs])
 
   if (!state) return null
 
@@ -79,22 +78,22 @@ export default function QuickActionModal() {
     delete data.id
 
     if (state.mode === 'create') {
-      const id = `${state.type.charAt(0)}_${Date.now()}`
+      const id = generateId(state.type.charAt(0))
       if (state.type === 'task') {
         setTasks([
           ...tasks,
           {
-            ...data,
+            ...(data as Partial<Task>),
             id,
             title: data.title || 'Nova Tarefa',
             priority: 'Média',
             status: 'A Fazer',
             deadline: new Date().toISOString(),
-          },
+          } as Task,
         ])
       } else if (state.type === 'canvas') {
-        const newFunnel = {
-          ...data,
+        const newFunnel: Funnel = {
+          ...(data as Partial<Funnel>),
           id,
           name: data.name || 'Novo Funil',
           status: 'Rascunho',
@@ -105,8 +104,8 @@ export default function QuickActionModal() {
         setFunnels([...funnels, newFunnel])
         if (!state.defaultProjectId) navigate(`/canvas/${id}`)
       } else if (state.type === 'document') {
-        const newDoc = {
-          ...data,
+        const newDoc: Document = {
+          ...(data as Partial<Document>),
           id,
           title: data.title || 'Novo Documento',
           content: data.content || '',
@@ -114,55 +113,16 @@ export default function QuickActionModal() {
         }
         setDocs([...docs, newDoc])
         if (!state.defaultProjectId) navigate(`/documentos`)
-      } else if (state.type === 'asset') {
-        setAssets([
-          ...assets,
-          {
-            ...data,
-            id,
-            name: data.name || 'Novo Asset',
-            type: 'image',
-            tags: [],
-          },
-        ])
-      } else if (state.type === 'insight') {
-        setInsights([
-          ...insights,
-          {
-            ...data,
-            id,
-            title: data.title || 'Novo Insight',
-            status: 'Rascunho',
-            createdAt: new Date().toISOString(),
-            isPinned: false,
-          },
-        ])
-      } else if (state.type === 'swipe') {
-        setSwipes([
-          ...swipes,
-          {
-            ...data,
-            id,
-            title: data.title || 'Nova Inspiração',
-            isFavorite: false,
-          },
-        ])
       }
       toast({ title: 'Criado com sucesso!' })
     } else {
       const id = state.itemId!
       if (state.type === 'canvas')
-        setFunnels(funnels.map((f) => (f.id === id ? { ...f, ...data } : f)))
-      else if (state.type === 'asset')
-        setAssets(assets.map((a) => (a.id === id ? { ...a, ...data } : a)))
-      else if (state.type === 'insight')
-        setInsights(insights.map((i) => (i.id === id ? { ...i, ...data } : i)))
-      else if (state.type === 'swipe')
-        setSwipes(swipes.map((s) => (s.id === id ? { ...s, ...data } : s)))
+        setFunnels(funnels.map((f) => (f.id === id ? ({ ...f, ...data } as Funnel) : f)))
       else if (state.type === 'task')
-        setTasks(tasks.map((t) => (t.id === id ? { ...t, ...data } : t)))
+        setTasks(tasks.map((t) => (t.id === id ? ({ ...t, ...data } as Task) : t)))
       else if (state.type === 'document')
-        setDocs(docs.map((d) => (d.id === id ? { ...d, ...data } : d)))
+        setDocs(docs.map((d) => (d.id === id ? ({ ...d, ...data } as Document) : d)))
       toast({ title: 'Atualizado com sucesso!' })
     }
 
@@ -173,9 +133,6 @@ export default function QuickActionModal() {
     task: 'Tarefa',
     canvas: 'Canvas (Funil)',
     document: 'Documento',
-    asset: 'Asset',
-    insight: 'Insight',
-    swipe: 'Inspiração (Swipe)',
   }
 
   return (
@@ -188,7 +145,7 @@ export default function QuickActionModal() {
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-6">
-          {['task', 'document', 'insight', 'swipe'].includes(state.type) && (
+          {['task', 'document'].includes(state.type) && (
             <div className="space-y-2">
               <Label>Título</Label>
               <Input
@@ -202,7 +159,7 @@ export default function QuickActionModal() {
             </div>
           )}
 
-          {['canvas', 'asset'].includes(state.type) && (
+          {['canvas'].includes(state.type) && (
             <div className="space-y-2">
               <Label>Nome</Label>
               <Input
@@ -242,69 +199,7 @@ export default function QuickActionModal() {
             </div>
           )}
 
-          {['asset', 'swipe'].includes(state.type) && (
-            <div className="space-y-2">
-              <Label>URL da Imagem/Link</Label>
-              <Input
-                required
-                value={formData.url || formData.imageUrl || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    [state.type === 'asset' ? 'url' : 'imageUrl']:
-                      e.target.value,
-                  })
-                }
-              />
-            </div>
-          )}
 
-          {['asset', 'swipe'].includes(state.type) && (
-            <div className="space-y-2">
-              <Label>Categoria</Label>
-              <Input
-                required
-                value={formData.category || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
-              />
-            </div>
-          )}
-
-          {state.type === 'insight' && (
-            <>
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select
-                  value={formData.type || 'Observação'}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, type: val })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Observação">Observação</SelectItem>
-                    <SelectItem value="Ideia">Ideia</SelectItem>
-                    <SelectItem value="Hipótese">Hipótese</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Conteúdo</Label>
-                <Textarea
-                  required
-                  className="resize-none h-24"
-                  value={formData.content || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, content: e.target.value })
-                  }
-                />
-              </div>
-            </>
-          )}
 
           <div className="space-y-2">
             <Label>Projeto</Label>

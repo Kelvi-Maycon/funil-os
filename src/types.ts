@@ -110,36 +110,21 @@ export type Document = {
   updatedAt: string
   folderId?: string | null
 }
-export type Asset = {
+export type Resource = {
   id: string
   projectId?: string | null
-  funnelId?: string
-  nodeId?: string
-  name: string
-  url: string
-  type: 'image' | 'pdf' | 'link'
-  category: string
-  tags: string[]
-  folderId?: string | null
-}
-export type Insight = {
-  id: string
-  projectId?: string | null
+  type: 'image' | 'link' | 'note' | 'file'
   title: string
   content: string
-  type: string
-  status: 'Rascunho' | 'Salvo' | 'Aplicado' | 'Descartado'
-  createdAt: string
+  tags: string[]
+  folderId?: string | null
   isPinned: boolean
-  folderId?: string | null
+  createdAt: string
+  thumbnail?: string
 }
-export type Swipe = {
+export type ResourceFolder = {
   id: string
-  projectId?: string | null
-  title: string
-  imageUrl: string
-  category: string
-  isFavorite: boolean
-  notes: string
-  folderId?: string | null
+  name: string
+  parentId: string | null
+  createdAt: string
 }

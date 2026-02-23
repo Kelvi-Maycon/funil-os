@@ -26,6 +26,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import { Asset } from '@/types'
+import { generateId } from '@/lib/generateId'
 import {
   ViewToggle,
   FolderBreadcrumbs,
@@ -63,7 +64,7 @@ export default function Assets() {
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const newAsset: Asset = {
-            id: `a_${Date.now()}_${Math.random()}`,
+            id: generateId('a'),
             projectId: 'p1',
             name: 'Pasted Image ' + format(new Date(), 'HH:mm:ss'),
             url: 'https://img.usecurling.com/p/800/600?q=wireframe&color=gray',
@@ -86,8 +87,8 @@ export default function Assets() {
     setIsDraggingOver(false)
     const files = Array.from(e.dataTransfer.files)
     if (files.length > 0) {
-      const newAssets = files.map((f, i) => ({
-        id: `a_${Date.now()}_${i}`,
+      const newAssets = files.map((f) => ({
+        id: generateId('a'),
         projectId: 'p1',
         name: f.name,
         url: 'https://img.usecurling.com/p/800/600?q=document&color=blue',
@@ -105,7 +106,7 @@ export default function Assets() {
     setFolders([
       ...allFolders,
       {
-        id: `f_${Date.now()}`,
+        id: generateId('f'),
         module: 'asset',
         name,
         parentId: currentFolderId,

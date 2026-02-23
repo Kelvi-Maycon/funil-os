@@ -11,6 +11,9 @@ import {
   ChevronRight,
   ChevronDown,
   FolderPlus,
+  PanelLeftClose,
+  PanelLeft,
+  Search,
 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -22,6 +25,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { generateId } from '@/lib/generateId'
 
 export default function Documents() {
   const [docs, setDocs] = useDocumentStore()
@@ -30,8 +34,17 @@ export default function Documents() {
   const [activeId, setActiveId] = useState(docs[0]?.id)
   const [newFolderOpen, setNewFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [search, setSearch] = useState('')
 
   const activeDoc = docs.find((d) => d.id === activeId)
+
+  const filteredDocs = search
+    ? docs.filter((d) => d.title.toLowerCase().includes(search.toLowerCase()))
+    : docs
+  const filteredFolders = search
+    ? folders.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
+    : folders
 
   const createDoc = () => {
     setAction({ type: 'document', mode: 'create' })
@@ -41,7 +54,7 @@ export default function Documents() {
     e.preventDefault()
     if (!newFolderName.trim()) return
     const newFolder = {
-      id: `f_${Date.now()}`,
+      id: generateId('f'),
       projectId: 'p1',
       module: 'project' as const,
       name: newFolderName,
@@ -104,8 +117,8 @@ export default function Documents() {
   }
 
   const renderTree = (parentId: string | null, level = 0) => {
-    const childFolders = folders.filter((f) => f.parentId === parentId)
-    const childDocs = docs.filter((d) => d.folderId === parentId)
+    const childFolders = filteredFolders.filter((f) => f.parentId === parentId)
+    const childDocs = filteredDocs.filter((d) => d.folderId === parentId)
 
     return (
       <div className="flex flex-col gap-1 mt-1">
@@ -172,48 +185,103 @@ export default function Documents() {
 
   return (
     <div className="flex h-full bg-background overflow-hidden animate-fade-in">
-      <div className="w-72 border-r border-border bg-card flex flex-col shrink-0 z-10 shadow-sm">
-        <div className="p-6 border-b border-border flex flex-col gap-3">
-          <Button
-            className="w-full justify-start shadow-sm font-semibold text-sm"
-            onClick={createDoc}
-          >
-            <Plus size={16} className="mr-2" /> Novo Documento
-          </Button>
-          <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
-            <DialogTrigger asChild>
+      <div
+        className={cn(
+          "border-r border-border bg-card flex flex-col shrink-0 z-10 shadow-sm transition-all duration-300",
+          isSidebarOpen ? "w-72" : "w-[60px]"
+        )}
+      >
+        <div className={cn("p-4 border-b border-border flex flex-col gap-3", !isSidebarOpen && "items-center px-2")}>
+          <div className={cn("flex items-center w-full", isSidebarOpen ? "justify-between" : "justify-center")}>
+            {isSidebarOpen && <span className="font-semibold text-sm text-foreground px-2">Pastas</span>}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 rounded-lg hover:bg-slate-200/50", !isSidebarOpen && "mb-2")}
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              title={isSidebarOpen ? "Ocultar pastas" : "Mostrar pastas"}
+            >
+              {isSidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
+            </Button>
+          </div>
+
+          {isSidebarOpen ? (
+            <div className="flex flex-col gap-2 w-full animate-fade-in">
               <Button
-                variant="outline"
-                className="w-full justify-start text-muted-foreground hover:text-foreground shadow-sm bg-background border-border text-sm"
+                className="w-full justify-start shadow-sm font-semibold text-sm"
+                onClick={createDoc}
               >
-                <FolderPlus size={16} className="mr-2" /> Nova Pasta
+                <Plus size={16} className="mr-2" /> Novo Documento
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Nova Pasta</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={createFolder} className="space-y-4 pt-6">
-                <Input
-                  placeholder="Nome da Pasta"
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  autoFocus
-                />
-                <Button type="submit" className="w-full">
-                  Criar Pasta
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+              <Dialog open={newFolderOpen} onOpenChange={setNewFolderOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground shadow-sm bg-background border-border text-sm"
+                  >
+                    <FolderPlus size={16} className="mr-2" /> Nova Pasta
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Criar Nova Pasta</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={createFolder} className="space-y-4 pt-6">
+                    <Input
+                      placeholder="Nome da Pasta"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      autoFocus
+                    />
+                    <Button type="submit" className="w-full">
+                      Criar Pasta
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          ) : (
+            <Button
+              size="icon"
+              variant="default"
+              className="h-10 w-10 shrink-0 shadow-sm rounded-xl"
+              onClick={createDoc}
+              title="Novo Documento"
+            >
+              <Plus size={18} />
+            </Button>
+          )}
         </div>
-        <ScrollArea
-          className="flex-1"
-          onDrop={(e) => onDrop(e, null)}
-          onDragOver={onDragOver}
-        >
-          <div className="p-3 min-h-full">{renderTree(null)}</div>
-        </ScrollArea>
+
+        {isSidebarOpen && (
+          <div className="px-3 pb-1">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+              <Input
+                placeholder="Buscar docs..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 h-8 text-sm bg-background"
+              />
+            </div>
+          </div>
+        )}
+
+        {isSidebarOpen ? (
+          <ScrollArea
+            className="flex-1 animate-fade-in"
+            onDrop={(e) => onDrop(e, null)}
+            onDragOver={onDragOver}
+          >
+            <div className="p-3 min-h-full">{renderTree(null)}</div>
+          </ScrollArea>
+        ) : (
+          <div className="flex-1 flex flex-col items-center pt-6 gap-6 animate-fade-in">
+            <div className="p-2 rounded-xl bg-muted/50 text-muted-foreground cursor-pointer hover:bg-muted transition-colors" title="Pastas ocultas">
+              <FolderIcon size={20} className="opacity-50" />
+            </div>
+          </div>
+        )}
       </div>
       <div className="flex-1 overflow-hidden bg-[#f8fafc]">
         {activeDoc ? (
