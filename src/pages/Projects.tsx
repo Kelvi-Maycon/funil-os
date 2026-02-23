@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useProjectStore from '@/stores/useProjectStore'
 import useFolderStore from '@/stores/useFolderStore'
+import useTaskStore from '@/stores/useTaskStore'
+import useFunnelStore from '@/stores/useFunnelStore'
+import useDocumentStore from '@/stores/useDocumentStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,8 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, Search, Folder as FolderIcon } from 'lucide-react'
+import { Plus, Search, Folder as FolderIcon, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { generateId } from '@/lib/generateId'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import {
   ViewToggle,
   FolderBreadcrumbs,
@@ -38,6 +43,12 @@ export default function Projects() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const [newName, setNewName] = useState('')
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null)
+
+  const [tasks, setTasks] = useTaskStore()
+  const [funnels, setFunnels] = useFunnelStore()
+  const [docs, setDocs] = useDocumentStore()
+
   const { toast } = useToast()
   const navigate = useNavigate()
 
@@ -57,7 +68,7 @@ export default function Projects() {
     setFolders([
       ...allFolders,
       {
-        id: `f_${Date.now()}`,
+        id: generateId('f'),
         module: 'project',
         name,
         parentId: currentFolderId,
@@ -71,7 +82,7 @@ export default function Projects() {
     e.preventDefault()
     if (!newName.trim()) return
     const newProject = {
-      id: `p_${Date.now()}`,
+      id: generateId('p'),
       name: newName,
       description: 'Sem descrição',
       status: 'Ativo' as const,
@@ -87,6 +98,20 @@ export default function Projects() {
   const updateProjectFolder = (id: string, folderId: string | null) => {
     setProjects(projects.map((p) => (p.id === id ? { ...p, folderId } : p)))
     toast({ title: 'Projeto movido com sucesso!' })
+  }
+
+  const handleDeleteProject = () => {
+    if (!projectToDelete) return
+    const id = projectToDelete
+
+    setTasks(tasks.filter((t) => t.projectId !== id))
+    setFunnels(funnels.filter((f) => f.projectId !== id))
+    setDocs(docs.filter((d) => d.projectId !== id))
+
+    setProjects(projects.filter((p) => p.id !== id))
+
+    setProjectToDelete(null)
+    toast({ title: 'Projeto e itens vinculados excluídos!' })
   }
 
   return (
@@ -201,12 +226,21 @@ export default function Projects() {
                         e.preventDefault()
                         e.stopPropagation()
                       }}
+                      className="flex items-center gap-1"
                     >
                       <MoveDialog
                         folders={moduleFolders}
                         currentFolderId={p.folderId}
                         onMove={(id) => updateProjectFolder(p.id, id)}
                       />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        onClick={() => setProjectToDelete(p.id)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -272,12 +306,21 @@ export default function Projects() {
                         e.preventDefault()
                         e.stopPropagation()
                       }}
+                      className="flex items-center gap-1"
                     >
                       <MoveDialog
                         folders={moduleFolders}
                         currentFolderId={p.folderId}
                         onMove={(id) => updateProjectFolder(p.id, id)}
                       />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        onClick={() => setProjectToDelete(p.id)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -286,6 +329,16 @@ export default function Projects() {
           </Table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!projectToDelete}
+        onOpenChange={(open) => !open && setProjectToDelete(null)}
+        title="Excluir Projeto?"
+        description="Esta ação é irreversível. O projeto e todos os funis, tarefas e documentos vinculados a ele serão excluídos permanentemente."
+        confirmLabel="Excluir"
+        variant="destructive"
+        onConfirm={handleDeleteProject}
+      />
     </div>
   )
 }

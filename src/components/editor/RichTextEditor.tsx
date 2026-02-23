@@ -14,6 +14,17 @@ import {
   Network,
   X,
   GripVertical,
+  PanelLeftClose,
+  PanelLeft,
+  Table,
+  Plus,
+  Trash2,
+  ArrowRightFromLine,
+  ArrowLeftFromLine,
+  ArrowDownFromLine,
+  ArrowUpFromLine,
+  ExternalLink,
+  Download,
 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -128,10 +139,14 @@ const getCanvasPreviewInnerHtml = (canvas: Funnel) => {
         ${edgesHtml}
       </svg>
       ${nodesHtml}
-      <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: hsl(var(--background) / 0.6); backdrop-filter: blur(2px); opacity: 0; transition: all 0.2s ease-in-out; pointer-events: none;" class="group-hover:opacity-100">
-         <div style="background: hsl(var(--card)); padding: 8px 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-size: 13px; font-weight: 600; color: hsl(var(--primary)); display: flex; align-items: center; gap: 6px; transform: translateY(4px); transition: transform 0.2s ease-in-out; border: 1px solid hsl(var(--border));" class="group-hover:translate-y-0">
+      <div class="absolute inset-0 flex items-center justify-center gap-3 bg-background/60 backdrop-blur-[2px] opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
+         <div data-action="preview" class="bg-card px-4 py-2 rounded-xl shadow-lg text-sm font-semibold text-foreground flex items-center gap-2 transform translate-y-2 transition-all hover:bg-muted border border-border cursor-pointer pointer-events-auto group-hover:translate-y-0">
            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-           Editar Canvas
+           Visualizar Lateral
+         </div>
+         <div data-action="navigate" class="bg-primary px-4 py-2 rounded-xl shadow-lg text-sm font-semibold text-primary-foreground flex items-center gap-2 transform translate-y-2 transition-all hover:brightness-110 border border-primary cursor-pointer pointer-events-auto group-hover:translate-y-0">
+           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/><path d="m21 3-9 9"/><path d="M15 3h6v6"/></svg>
+           Ir até o Canvas
          </div>
       </div>
     </div>
@@ -160,6 +175,32 @@ export default function RichTextEditor({
   const [imageUrl, setImageUrl] = useState('')
   const [savedRange, setSavedRange] = useState<Range | null>(null)
   const [editingCanvasId, setEditingCanvasId] = useState<string | null>(null)
+  const [isOutlineOpen, setIsOutlineOpen] = useState(true)
+  const [activeTableNode, setActiveTableNode] = useState<HTMLTableElement | null>(null)
+  const [activeTableCell, setActiveTableCell] = useState<HTMLTableCellElement | null>(null)
+
+  // Header outline state
+  const [headers, setHeaders] = useState<{ id: string; text: string; level: number }[]>([])
+
+  const extractHeaders = useCallback(() => {
+    if (!editorRef.current) return
+    const headerElements = editorRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6')
+    const extracted: { id: string; text: string; level: number }[] = []
+
+    headerElements.forEach((el, index) => {
+      // Ensure element has an ID for anchoring
+      if (!el.id) {
+        el.id = `header-${index}-${Date.now()}`
+      }
+      extracted.push({
+        id: el.id,
+        text: el.textContent || 'Sem Título',
+        level: parseInt(el.tagName.replace('H', ''), 10)
+      })
+    })
+
+    setHeaders(extracted)
+  }, [])
 
   const [panelWidth, setPanelWidth] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -199,8 +240,9 @@ export default function RichTextEditor({
       if (hasChanges) {
         onChange(editorRef.current.innerHTML)
       }
+      extractHeaders()
     }
-  }, [doc.id])
+  }, [doc.id, doc.content])
 
   const saveSelection = useCallback(() => {
     const selection = window.getSelection()
@@ -211,6 +253,21 @@ export default function RichTextEditor({
         editorRef.current.contains(range.commonAncestorContainer)
       ) {
         setSavedRange(range.cloneRange())
+
+        // Check for active table cell
+        let node = range.commonAncestorContainer as Node | null
+        if (node?.nodeType === Node.TEXT_NODE) {
+          node = node.parentNode
+        }
+
+        const cell = (node as Element)?.closest?.('td, th') as HTMLTableCellElement | null
+        const table = (node as Element)?.closest?.('table') as HTMLTableElement | null
+
+        setActiveTableCell(cell)
+        setActiveTableNode(table)
+      } else {
+        setActiveTableCell(null)
+        setActiveTableNode(null)
       }
     }
   }, [])
@@ -320,14 +377,179 @@ export default function RichTextEditor({
 
   const handleEditorClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement
+
+    // Canvas Preview clicks
     const canvasBlock = target.closest('.canvas-preview-block')
     if (canvasBlock) {
+      e.preventDefault()
       const canvasId = canvasBlock.getAttribute('data-canvas-id')
       if (canvasId) {
-        e.preventDefault()
-        setEditingCanvasId(canvasId)
+        const actionBtn = target.closest('[data-action]')
+        const action = actionBtn?.getAttribute('data-action')
+
+        if (action === 'navigate') {
+          navigate(`/canvas/${canvasId}`)
+        } else {
+          setEditingCanvasId(canvasId)
+        }
       }
     }
+
+    // Check table selection immediately on click
+    let node = target as Element | null
+    const cell = node?.closest?.('td, th') as HTMLTableCellElement | null
+    const table = node?.closest?.('table') as HTMLTableElement | null
+    setActiveTableCell(cell)
+    setActiveTableNode(table)
+  }
+
+  // Table Operations
+  const insertTable = () => {
+    const tableHtml = `
+      <table class="w-full border-collapse border border-border my-4 shadow-sm rounded-lg overflow-hidden bg-card text-sm">
+        <thead>
+          <tr class="bg-muted/50 border-b border-border">
+            <th class="border border-border p-3 text-left font-semibold">Cabeçalho 1</th>
+            <th class="border border-border p-3 text-left font-semibold">Cabeçalho 2</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-border">
+            <td class="border border-border p-3">Linha 1, Col 1</td>
+            <td class="border border-border p-3">Linha 1, Col 2</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="border border-border p-3">Linha 2, Col 1</td>
+            <td class="border border-border p-3">Linha 2, Col 2</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><br/></p>
+    `
+    insertHtmlAtSelection(tableHtml)
+  }
+
+  const addRow = (direction: 'above' | 'below') => {
+    if (!activeTableCell || !activeTableNode) return
+    const tr = activeTableCell.closest('tr')
+    if (!tr) return
+
+    const newTr = document.createElement('tr')
+    newTr.className = "border-b border-border"
+    const cellCount = tr.children.length
+
+    for (let i = 0; i < cellCount; i++) {
+      const td = document.createElement('td')
+      td.className = "border border-border p-3"
+      td.innerHTML = "<br/>"
+      newTr.appendChild(td)
+    }
+
+    if (direction === 'above') {
+      tr.parentNode?.insertBefore(newTr, tr)
+    } else {
+      tr.parentNode?.insertBefore(newTr, tr.nextSibling)
+    }
+    onChange(editorRef.current!.innerHTML)
+  }
+
+  const addColumn = (direction: 'left' | 'right') => {
+    if (!activeTableCell || !activeTableNode) return
+    const tr = activeTableCell.closest('tr')
+    if (!tr) return
+
+    const cellIndex = Array.from(tr.children).indexOf(activeTableCell)
+    const rows = activeTableNode.querySelectorAll('tr')
+
+    rows.forEach(row => {
+      const isHeader = row.parentNode?.nodeName.toLowerCase() === 'thead'
+      const cell = document.createElement(isHeader ? 'th' : 'td')
+      cell.className = isHeader
+        ? "border border-border p-3 text-left font-semibold"
+        : "border border-border p-3"
+      cell.innerHTML = "<br/>"
+
+      const targetCell = row.children[cellIndex]
+      if (targetCell) {
+        if (direction === 'left') {
+          row.insertBefore(cell, targetCell)
+        } else {
+          row.insertBefore(cell, targetCell.nextSibling)
+        }
+      }
+    })
+    onChange(editorRef.current!.innerHTML)
+  }
+
+  const deleteRow = () => {
+    if (!activeTableCell || !activeTableNode) return
+    const tr = activeTableCell.closest('tr')
+    if (!tr) return
+
+    if (activeTableNode.querySelectorAll('tr').length <= 2) {
+      // Avoid deleting the last row of the body
+      return deleteTable()
+    }
+
+    tr.remove()
+    setActiveTableCell(null)
+    onChange(editorRef.current!.innerHTML)
+  }
+
+  const deleteColumn = () => {
+    if (!activeTableCell || !activeTableNode) return
+    const tr = activeTableCell.closest('tr')
+    if (!tr) return
+
+    if (tr.children.length <= 1) {
+      return deleteTable()
+    }
+
+    const cellIndex = Array.from(tr.children).indexOf(activeTableCell)
+    const rows = activeTableNode.querySelectorAll('tr')
+
+    rows.forEach(row => {
+      const targetCell = row.children[cellIndex]
+      if (targetCell) {
+        targetCell.remove()
+      }
+    })
+    setActiveTableCell(null)
+    onChange(editorRef.current!.innerHTML)
+  }
+
+  const deleteTable = () => {
+    if (!activeTableNode) return
+    activeTableNode.remove()
+    setActiveTableNode(null)
+    setActiveTableCell(null)
+    onChange(editorRef.current!.innerHTML)
+  }
+
+  const insertNewGuide = () => {
+    const pageBreakHtml = `
+      <div contenteditable="false" style="margin: 80px -40px; height: 32px; background: #f8fafc; border-top: 1px dashed #cbd5e1; border-bottom: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; user-select: none;">
+         <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; font-weight: 600;">Nova Seção</span>
+      </div>
+      <h2>Nova Guia</h2>
+      <p><br/></p>
+    `
+    insertHtmlAtSelection(pageBreakHtml)
+
+    setTimeout(() => {
+      if (editorRef.current) {
+        const h2s = editorRef.current.querySelectorAll('h2')
+        const lastH2 = h2s[h2s.length - 1]
+        if (lastH2) {
+          const selection = window.getSelection()
+          const range = document.createRange()
+          range.selectNodeContents(lastH2)
+          selection?.removeAllRanges()
+          selection?.addRange(range)
+          lastH2.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }
+    }, 50)
   }
 
   const handleCanvasChange = (updatedFunnel: Funnel) => {
@@ -398,20 +620,88 @@ export default function RichTextEditor({
       ref={containerRef}
       className="flex w-full h-full overflow-hidden bg-transparent relative"
     >
+      {/* GUIAS DO DOCUMENTO (OUTLINE) */}
       <div
         className={cn(
-          'flex flex-col h-full overflow-y-auto ease-in-out flex-1 min-w-0 p-4 sm:p-6 lg:p-8',
+          "hidden xl:flex shrink-0 bg-transparent flex-col transition-all duration-300 border-r border-slate-200/50",
+          isOutlineOpen ? "w-64" : "w-[60px] items-center"
+        )}
+      >
+        <div className={cn("flex flex-col py-5 w-full", isOutlineOpen ? "px-6" : "px-0 items-center")}>
+          <div className={cn("flex items-center w-full", isOutlineOpen ? "justify-between" : "justify-center")}>
+            {isOutlineOpen && (
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 whitespace-nowrap overflow-hidden">
+                <List size={16} className="text-primary shrink-0" /> Guias no documento
+              </h3>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 rounded-lg hover:bg-slate-200/50"
+              onClick={() => setIsOutlineOpen(!isOutlineOpen)}
+              title={isOutlineOpen ? "Ocultar guias" : "Sua estrutura de documento"}
+            >
+              {isOutlineOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
+            </Button>
+          </div>
+
+          {isOutlineOpen && (
+            <div className="mt-4 flex w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 shadow-sm flex-1 font-semibold text-xs border-dashed text-muted-foreground hover:text-foreground hover:border-solid hover:border-primary/50 hover:bg-primary/5"
+                onClick={insertNewGuide}
+                title="Adicionar novo título"
+              >
+                <Plus size={14} className="mr-1.5" /> Adicionar Guia
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {isOutlineOpen && (
+          <div className="flex-1 overflow-y-auto space-y-1 p-6 pt-0 pr-4 no-scrollbar animate-fade-in w-full">
+            {headers.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">
+                Adicione títulos (H1, H2, etc.) para criar o sumário do documento.
+              </p>
+            ) : (
+              headers.map((header) => (
+                <button
+                  key={header.id}
+                  onClick={() => {
+                    const el = document.getElementById(header.id)
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  }}
+                  style={{ paddingLeft: `${(header.level - 1) * 12}px` }}
+                  className={cn(
+                    "w-full text-left text-sm py-1.5 px-2 rounded-md hover:bg-primary/10 transition-colors line-clamp-2",
+                    header.level === 1 ? "font-semibold text-foreground mt-2" : "text-muted-foreground"
+                  )}
+                >
+                  {header.text}
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      <div
+        className={cn(
+          'flex flex-col h-full overflow-y-auto ease-in-out flex-1 min-w-0 px-4 sm:px-6 lg:px-8',
           !isResizing && 'transition-all duration-300',
         )}
       >
         <div
           className={cn(
-            'flex flex-col flex-1 mx-auto w-full bg-white shadow-sm border border-slate-200/60 rounded-xl relative',
+            'flex flex-col mx-auto w-full bg-white shadow-sm border border-slate-200/60 rounded-xl relative my-4 sm:my-6 lg:my-8',
             !isResizing && 'transition-all duration-300',
-            'max-w-[1000px]',
+            'max-w-[1000px] min-h-[max-content]',
           )}
         >
-          <div className="flex flex-col gap-4 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-10 shrink-0 p-6 lg:p-10 pb-6 rounded-t-xl">
+          <div className="flex flex-col gap-4 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-30 shrink-0 p-6 lg:px-10 lg:pt-10 lg:pb-4 rounded-t-xl shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <Input
                 value={doc.title}
@@ -427,7 +717,7 @@ export default function RichTextEditor({
                     onClick={() =>
                       navigate(`/canvas/${doc.funnelId}?nodeId=${doc.nodeId}`)
                     }
-                    className="text-purple-600 border-purple-200 bg-purple-50 hover:bg-purple-100 shrink-0"
+                    className="text-purple-600 border-purple-200 bg-purple-50 hover:bg-purple-100 shrink-0 h-9"
                   >
                     <Network size={14} className="mr-1.5" /> Ver no Canvas
                   </Button>
@@ -438,7 +728,7 @@ export default function RichTextEditor({
                     onProjectChange(val === 'none' ? null : val)
                   }
                 >
-                  <SelectTrigger className="w-[180px] h-8 bg-transparent">
+                  <SelectTrigger className="w-[180px] h-9 bg-muted/30 border-slate-200">
                     <SelectValue placeholder="Project" />
                   </SelectTrigger>
                   <SelectContent>
@@ -452,17 +742,16 @@ export default function RichTextEditor({
                 </Select>
               </div>
             </div>
-          </div>
 
-          <div className="px-6 lg:px-10 pb-12 flex-1 flex flex-col">
-            <div className="flex items-center gap-1 mb-8 shrink-0 flex-wrap bg-card border border-border p-1.5 rounded-2xl shadow-sm w-fit mt-6">
+            {/* TOOLBAR FIXADA NO TOPO */}
+            <div className="flex items-center gap-1 shrink-0 flex-wrap mt-2">
               <Button
                 variant="ghost"
                 size="icon"
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => exec('formatBlock', 'H1')}
                 title="Título 1"
-                className="rounded-lg h-8 w-8"
+                className="rounded-lg h-8 w-8 hover:bg-slate-100"
               >
                 <Heading1 size={16} />
               </Button>
@@ -472,7 +761,7 @@ export default function RichTextEditor({
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => exec('formatBlock', 'H2')}
                 title="Título 2"
-                className="rounded-lg h-8 w-8"
+                className="rounded-lg h-8 w-8 hover:bg-slate-100"
               >
                 <Heading2 size={16} />
               </Button>
@@ -483,7 +772,7 @@ export default function RichTextEditor({
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => exec('bold')}
                 title="Negrito"
-                className="rounded-lg h-8 w-8"
+                className="rounded-lg h-8 w-8 hover:bg-slate-100"
               >
                 <Bold size={16} />
               </Button>
@@ -493,18 +782,40 @@ export default function RichTextEditor({
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => exec('italic')}
                 title="Itálico"
-                className="rounded-lg h-8 w-8"
+                className="rounded-lg h-8 w-8 hover:bg-slate-100"
               >
                 <Italic size={16} />
               </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onMouseDown={handleToolbarMouseDown}
+                onClick={() => exec('underline')}
+                title="Sublinhado"
+                className="rounded-lg h-8 w-8 text-slate-700 font-serif font-bold underline hover:bg-slate-100"
+              >
+                U
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onMouseDown={handleToolbarMouseDown}
+                onClick={() => exec('strikeThrough')}
+                title="Tachado"
+                className="rounded-lg h-8 w-8 text-slate-700 font-serif font-bold line-through hover:bg-slate-100"
+              >
+                S
+              </Button>
+
               <Separator orientation="vertical" className="h-4 mx-1" />
+
               <Button
                 variant="ghost"
                 size="icon"
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => exec('insertUnorderedList')}
                 title="Lista"
-                className="rounded-lg h-8 w-8"
+                className="rounded-lg h-8 w-8 hover:bg-slate-100"
               >
                 <List size={16} />
               </Button>
@@ -512,9 +823,61 @@ export default function RichTextEditor({
                 variant="ghost"
                 size="icon"
                 onMouseDown={handleToolbarMouseDown}
+                onClick={() => exec('insertOrderedList')}
+                title="Lista Numerada"
+                className="rounded-lg h-8 w-8 font-mono text-sm font-bold hover:bg-slate-100"
+              >
+                1.
+              </Button>
+
+              <Separator orientation="vertical" className="h-4 mx-1" />
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onMouseDown={handleToolbarMouseDown}
+                onClick={() => exec('justifyLeft')}
+                title="Alinhar à Esquerda"
+                className="rounded-lg h-8 w-8 flex flex-col items-start gap-0.5 justify-center py-1.5 hover:bg-slate-100"
+              >
+                <div className="h-0.5 w-4 bg-slate-700 rounded-full" />
+                <div className="h-0.5 w-3 bg-slate-700 rounded-full" />
+                <div className="h-0.5 w-4 bg-slate-700 rounded-full" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onMouseDown={handleToolbarMouseDown}
+                onClick={() => exec('justifyCenter')}
+                title="Centralizar"
+                className="rounded-lg h-8 w-8 flex flex-col items-center gap-0.5 justify-center py-1.5 hover:bg-slate-100"
+              >
+                <div className="h-0.5 w-4 bg-slate-700 rounded-full" />
+                <div className="h-0.5 w-3 bg-slate-700 rounded-full" />
+                <div className="h-0.5 w-4 bg-slate-700 rounded-full" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onMouseDown={handleToolbarMouseDown}
+                onClick={() => exec('justifyRight')}
+                title="Alinhar à Direita"
+                className="rounded-lg h-8 w-8 flex flex-col items-end gap-0.5 justify-center py-1.5 hover:bg-slate-100"
+              >
+                <div className="h-0.5 w-4 bg-slate-700 rounded-full" />
+                <div className="h-0.5 w-3 bg-slate-700 rounded-full" />
+                <div className="h-0.5 w-4 bg-slate-700 rounded-full" />
+              </Button>
+
+              <Separator orientation="vertical" className="h-4 mx-1" />
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onMouseDown={handleToolbarMouseDown}
                 onClick={() => exec('formatBlock', 'BLOCKQUOTE')}
                 title="Citação"
-                className="rounded-lg h-8 w-8"
+                className="rounded-lg h-8 w-8 hover:bg-slate-100"
               >
                 <Quote size={16} />
               </Button>
@@ -524,12 +887,23 @@ export default function RichTextEditor({
                 onMouseDown={handleToolbarMouseDown}
                 onClick={() => exec('insertHorizontalRule')}
                 title="Divisor"
-                className="rounded-lg h-8 w-8"
+                className="rounded-lg h-8 w-8 hover:bg-slate-100"
               >
                 <SeparatorHorizontal size={16} />
               </Button>
 
               <Separator orientation="vertical" className="h-4 mx-1" />
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onMouseDown={handleToolbarMouseDown}
+                onClick={insertTable}
+                title="Tabela"
+                className="rounded-lg h-8 w-8 hover:bg-slate-100"
+              >
+                <Table size={16} />
+              </Button>
 
               <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
                 <DialogTrigger asChild>
@@ -538,7 +912,7 @@ export default function RichTextEditor({
                     size="icon"
                     onMouseDown={() => saveSelection()}
                     title="Adicionar Imagem"
-                    className="rounded-lg h-8 w-8"
+                    className="rounded-lg h-8 w-8 hover:bg-slate-100"
                   >
                     <ImageIcon size={16} />
                   </Button>
@@ -573,6 +947,25 @@ export default function RichTextEditor({
                     <Network size={14} className="mr-2" /> Importar Canvas
                   </Button>
                 </DialogTrigger>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center text-muted-foreground hover:text-foreground transition-colors shrink-0 rounded-xl px-3 h-8"
+                  title="Exportar como texto"
+                  onClick={() => {
+                    const text = editorRef.current?.innerText || ''
+                    const blob = new Blob([`# ${doc.title}\n\n${text}`], { type: 'text/plain' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `${doc.title.replace(/\s+/g, '_')}.txt`
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }}
+                >
+                  <Download size={14} className="mr-1.5" /> Exportar
+                </Button>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Selecionar Canvas</DialogTitle>
@@ -582,7 +975,12 @@ export default function RichTextEditor({
                       <div
                         key={f.id}
                         onClick={() => setSelectedCanvasId(f.id)}
-                        className={`border rounded-lg p-4 cursor-pointer transition-all flex flex-col items-center justify-center text-center gap-2 ${selectedCanvasId === f.id ? 'border-primary ring-1 ring-primary bg-primary/5' : 'hover:border-primary/50 bg-card'}`}
+                        className={cn(
+                          "border rounded-lg p-4 cursor-pointer transition-all flex flex-col items-center justify-center text-center gap-2",
+                          selectedCanvasId === f.id
+                            ? 'border-primary ring-1 ring-primary bg-primary/5'
+                            : 'hover:border-primary/50 bg-card'
+                        )}
                       >
                         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-1">
                           <Network
@@ -613,11 +1011,41 @@ export default function RichTextEditor({
                     disabled={!selectedCanvasId}
                     className="w-full"
                   >
-                    Importar
+                    Importar Visualização
                   </Button>
                 </DialogContent>
               </Dialog>
+
+              {activeTableNode && (
+                <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200 ml-4 py-1 px-2 bg-primary/10 border border-primary/20 rounded-lg shrink-0">
+                  <span className="text-xs font-semibold text-primary mr-1 px-1">Tabela</span>
+                  <Separator orientation="vertical" className="h-4 mx-1 bg-primary/20" />
+                  <Button variant="ghost" size="icon" onMouseDown={handleToolbarMouseDown} onClick={() => addRow('above')} className="h-7 w-7 text-primary hover:bg-primary/20 rounded-md" title="Adicionar Linha Acima">
+                    <ArrowUpFromLine size={14} />
+                  </Button>
+                  <Button variant="ghost" size="icon" onMouseDown={handleToolbarMouseDown} onClick={() => addRow('below')} className="h-7 w-7 text-primary hover:bg-primary/20 rounded-md" title="Adicionar Linha Abaixo">
+                    <ArrowDownFromLine size={14} />
+                  </Button>
+                  <Separator orientation="vertical" className="h-4 mx-1 bg-primary/20" />
+                  <Button variant="ghost" size="icon" onMouseDown={handleToolbarMouseDown} onClick={() => addColumn('left')} className="h-7 w-7 text-primary hover:bg-primary/20 rounded-md" title="Adicionar Coluna à Esquerda">
+                    <ArrowLeftFromLine size={14} />
+                  </Button>
+                  <Button variant="ghost" size="icon" onMouseDown={handleToolbarMouseDown} onClick={() => addColumn('right')} className="h-7 w-7 text-primary hover:bg-primary/20 rounded-md" title="Adicionar Coluna à Direita">
+                    <ArrowRightFromLine size={14} />
+                  </Button>
+                  <Separator orientation="vertical" className="h-4 mx-1 bg-primary/20" />
+                  <Button variant="ghost" size="icon" onMouseDown={handleToolbarMouseDown} onClick={deleteRow} className="h-7 w-7 text-destructive hover:bg-destructive/10 rounded-md" title="Excluir Linha">
+                    <Trash2 size={13} className="opacity-80" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onMouseDown={handleToolbarMouseDown} onClick={deleteTable} className="h-7 w-7 text-destructive hover:bg-destructive/10 rounded-md" title="Excluir Tabela Inteira">
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              )}
             </div>
+          </div>
+
+          <div className="mx-6 lg:mx-10 mb-12 mt-8 flex-1 flex flex-col relative w-full">
             <div
               ref={editorRef}
               contentEditable
@@ -625,8 +1053,12 @@ export default function RichTextEditor({
               onBlur={(e) => {
                 saveSelection()
                 onChange(e.currentTarget.innerHTML)
+                extractHeaders()
               }}
-              onKeyUp={saveSelection}
+              onKeyUp={() => {
+                saveSelection()
+                extractHeaders()
+              }}
               onMouseUp={saveSelection}
               onInput={(e) => {
                 onChange(e.currentTarget.innerHTML)

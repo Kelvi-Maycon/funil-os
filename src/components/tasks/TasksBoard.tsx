@@ -59,7 +59,31 @@ export default function TasksBoard({
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData('taskId', id)
     e.dataTransfer.effectAllowed = 'move'
-    setTimeout(() => setDraggingId(id), 0)
+
+    // Create an unconstrained clone to serve as the drag image 
+    // This fixes the native HTML5 issue where overflow-auto clips the drag ghost
+    const target = e.currentTarget as HTMLElement
+    const clone = target.cloneNode(true) as HTMLElement
+    clone.style.width = `${target.offsetWidth}px`
+    clone.style.height = `${target.offsetHeight}px`
+    clone.style.position = 'absolute'
+    clone.style.top = '-9999px'
+    clone.style.left = '-9999px'
+    clone.style.opacity = '1'
+    clone.style.transform = 'none'
+    clone.style.pointerEvents = 'none'
+    document.body.appendChild(clone)
+
+    const rect = target.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    e.dataTransfer.setDragImage(clone, x, y)
+
+    setTimeout(() => {
+      document.body.removeChild(clone)
+      setDraggingId(id)
+    }, 0)
   }
 
   const handleDragEnd = () => {
@@ -102,6 +126,9 @@ export default function TasksBoard({
                 <h3 className="font-bold text-sm text-slate-800">
                   {col.label}
                 </h3>
+                <span className="text-xs font-semibold text-slate-400 bg-white/60 rounded-full px-2 py-0.5">
+                  {colTasks.length}
+                </span>
               </div>
               <button className="text-slate-400 hover:text-slate-600">
                 <MoreHorizontal size={16} />
@@ -127,12 +154,18 @@ export default function TasksBoard({
                     onDragEnd={handleDragEnd}
                     onClick={() => onCardClick(t)}
                     className={cn(
-                      'cursor-pointer hover:shadow-md transition-all active:cursor-grabbing border-none shadow-sm rounded-xl bg-card relative',
+                      'cursor-grab active:cursor-grabbing shadow-sm rounded-xl bg-card relative overflow-hidden',
                       isDragging
-                        ? 'opacity-40 scale-[0.98] shadow-none ring-1 ring-primary/20'
-                        : 'opacity-100',
+                        ? 'opacity-40 border-primary/40 border-dashed shadow-none ring-0'
+                        : 'opacity-100 border-transparent hover:shadow-md hover:border-primary/20 transition-shadow transition-colors',
                     )}
                   >
+                    <div className={cn(
+                      'absolute left-0 top-0 bottom-0 w-1 rounded-l-xl',
+                      t.priority === 'Alta' && 'bg-red-500',
+                      t.priority === 'Média' && 'bg-amber-500',
+                      t.priority === 'Baixa' && 'bg-slate-300',
+                    )} />
                     <CardContent className="p-4 flex flex-col gap-3">
                       <div className="flex justify-between items-start">
                         <Badge

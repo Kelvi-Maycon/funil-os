@@ -24,6 +24,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { generateId } from '@/lib/generateId'
 import {
   ViewToggle,
   FolderBreadcrumbs,
@@ -56,7 +57,7 @@ export default function SwipeFile() {
     setFolders([
       ...allFolders,
       {
-        id: `f_${Date.now()}`,
+        id: generateId('f'),
         module: 'swipe',
         name,
         parentId: currentFolderId,

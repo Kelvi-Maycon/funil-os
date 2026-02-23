@@ -22,7 +22,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { X } from 'lucide-react'
 import useDocumentStore from '@/stores/useDocumentStore'
-import useAssetStore from '@/stores/useAssetStore'
+import useResourceStore from '@/stores/useResourceStore'
 
 type NodeSettingsModalProps = {
   node: Node | null
@@ -40,7 +40,7 @@ export function NodeSettingsModal({
   const [description, setDescription] = useState('')
   const [isTaskMode, setIsTaskMode] = useState(false)
   const [docs] = useDocumentStore()
-  const [assets] = useAssetStore()
+  const [resources] = useResourceStore()
   const [linkedDocs, setLinkedDocs] = useState<string[]>([])
   const [linkedAssets, setLinkedAssets] = useState<string[]>([])
 
@@ -67,7 +67,7 @@ export function NodeSettingsModal({
   if (!node) return null
 
   const availableDocs = docs.filter((d) => !linkedDocs.includes(d.id))
-  const availableAssets = assets.filter((a) => !linkedAssets.includes(a.id))
+  const availableAssets = resources.filter((a) => !linkedAssets.includes(a.id))
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -162,7 +162,7 @@ export function NodeSettingsModal({
                 <SelectContent className="rounded-xl">
                   {availableAssets.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.name}
+                      {a.title}
                     </SelectItem>
                   ))}
                   {availableAssets.length === 0 && (
@@ -175,7 +175,7 @@ export function NodeSettingsModal({
               {linkedAssets.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1">
                   {linkedAssets.map((id) => {
-                    const a = assets.find((asset) => asset.id === id)
+                    const a = resources.find((asset) => asset.id === id)
                     if (!a) return null
                     return (
                       <Badge
@@ -183,7 +183,7 @@ export function NodeSettingsModal({
                         variant="outline"
                         className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 bg-white border-slate-200 shadow-sm rounded-full text-[13px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                       >
-                        {a.name}
+                        {a.title}
                         <button
                           onClick={() =>
                             setLinkedAssets(

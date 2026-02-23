@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { generateId } from '@/lib/generateId'
 import { Node, Task } from '@/types'
 import { cn } from '@/lib/utils'
 import useTaskStore from '@/stores/useTaskStore'
@@ -144,7 +145,7 @@ export default function NodeItem({
     }
 
     const newTask: Task = {
-      id: `t_${Date.now()}`,
+      id: generateId('t'),
       title: newTaskTitle.trim(),
       projectId: funnel?.projectId || null,
       funnelId: funnel?.id,
@@ -725,7 +726,7 @@ export default function NodeItem({
         className={cn(
           'absolute top-0 left-0 pointer-events-auto w-[300px] rounded-2xl shadow-sm border border-slate-200 bg-white z-10 overflow-hidden group',
           selected &&
-            'ring-4 ring-purple-500/40 border-purple-500/50 shadow-md',
+          'ring-4 ring-purple-500/40 border-purple-500/50 shadow-md',
           isDragging
             ? 'opacity-90 scale-[1.02] z-50 cursor-grabbing shadow-lg'
             : isPanMode
@@ -784,16 +785,16 @@ export default function NodeItem({
       className={cn(
         'absolute top-0 left-0 pointer-events-auto w-[260px] rounded-[1.25rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border p-5 z-10 flex flex-col gap-2 group select-none',
         isHovered &&
-          !selected &&
-          'shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-4 ring-slate-50',
+        !selected &&
+        'shadow-[0_8px_30px_rgba(0,0,0,0.06)] ring-4 ring-slate-50',
         selected &&
-          'shadow-[0_8px_30px_rgba(0,0,0,0.12)] ring-2 ring-purple-500/40 border-purple-500/50',
+        'shadow-[0_8px_30px_rgba(0,0,0,0.12)] ring-2 ring-purple-500/40 border-purple-500/50',
         isDragging &&
-          'opacity-90 scale-[1.02] z-50 shadow-[0_12px_40px_rgba(0,0,0,0.1)]',
+        'opacity-90 scale-[1.02] z-50 shadow-[0_12px_40px_rgba(0,0,0,0.1)]',
         node.data.isTaskMode && node.data.isCompleted
           ? 'bg-[#ecfdf5] border-[#bbf7d0]'
           : (node.style?.fill && node.style.fill !== 'transparent') ||
-              (node.style?.opacity ?? 1) < 1
+            (node.style?.opacity ?? 1) < 1
             ? 'border-slate-100'
             : 'bg-white border-slate-100',
       )}
@@ -971,7 +972,7 @@ export default function NodeItem({
                 className={cn(
                   'rounded-[4px] border-slate-300 w-4 h-4 shadow-none',
                   node.data.isCompleted &&
-                    'data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500',
+                  'data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500',
                 )}
               />
             </div>
@@ -981,8 +982,8 @@ export default function NodeItem({
               className={cn(
                 'font-bold text-slate-800 text-[15px] truncate leading-tight',
                 node.data.isTaskMode &&
-                  node.data.isCompleted &&
-                  'text-slate-600 line-through decoration-slate-300',
+                node.data.isCompleted &&
+                'text-slate-600 line-through decoration-slate-300',
               )}
             >
               {node.data.name}
